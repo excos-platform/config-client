@@ -8,4 +8,12 @@ namespace Excos.Options.Abstractions.Data;
 public class FilterCollection : KeyedCollection<string, Filter>
 {
     protected override string GetKeyForItem(Filter item) => item.PropertyName;
+
+    public void AddRange(IEnumerable<Filter> filters)
+    {
+        foreach(var filter in filters)
+        {
+            Add(filter);
+        }
+    }
 }

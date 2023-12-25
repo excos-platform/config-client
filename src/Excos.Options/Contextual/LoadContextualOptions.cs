@@ -52,7 +52,9 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         {
             var features = await provider.GetExperimentsAsync(cancellationToken);
 
-            var applicableFeatures = features.Where(e => receiver.Satisfies(e.Filters));
+            var applicableFeatures = features
+                .Where(e => e.Enabled)
+                .Where(e => receiver.Satisfies(e.Filters));
             foreach (var feature in applicableFeatures)
             {
                 var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken);

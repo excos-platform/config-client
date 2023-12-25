@@ -12,7 +12,7 @@ namespace Excos.Options.Contextual;
 internal class ContextReceiver : IOptionsContextReceiver
 {
     private string _identifier = string.Empty;
-    private readonly Dictionary<string, Func<Filter, bool>> FilteringClosures = new();
+    private readonly Dictionary<string, Func<Filter, bool>> FilteringClosures = new(StringComparer.InvariantCultureIgnoreCase);
 
     public void Receive<T>(string key, T value)
     {

@@ -23,7 +23,7 @@ Given the context T we look through all experiments that match T over filtering 
             "salt": "nvjdn6z8",
             "variants": {
                 "A": {
-                    "allocation": "[0, 0.5)",
+                    "allocation": "[0; 0.5)",
                     "settings": {
                         "MyOption": {
                             "Color": "Blue"
@@ -31,7 +31,7 @@ Given the context T we look through all experiments that match T over filtering 
                     }
                 },
                 "B": {
-                    "allocation": "[0.5, 1)",
+                    "allocation": "[0.5; 1)",
                     "settings": {
                         "MyOption": {
                             "Color": "Red"
@@ -39,7 +39,7 @@ Given the context T we look through all experiments that match T over filtering 
                     }
                 },
                 "B_Chrome": {
-                    "allocation": "[0.5, 1)",
+                    "allocation": "[0.5; 1)",
                     "filters": {
                         "browser": "*Chrome*"
                     },

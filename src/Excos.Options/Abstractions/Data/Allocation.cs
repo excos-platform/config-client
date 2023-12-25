@@ -5,8 +5,8 @@ namespace Excos.Options.Abstractions.Data;
 
 public struct Allocation
 {
-    private readonly Range _range;
-    public Allocation(Range range)
+    private readonly Range<double> _range;
+    public Allocation(Range<double> range)
     {
         if (range.Start < 0 || range.Start > 1 || range.End < 0 || range.End > 1)
         {

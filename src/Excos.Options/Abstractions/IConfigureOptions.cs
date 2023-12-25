@@ -1,7 +1,7 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-namespace Excos.Options.Abstractions.Data;
+namespace Excos.Options.Abstractions;
 
 /// <summary>
 /// A generic configuring function which attempts to apply settings over an options object.

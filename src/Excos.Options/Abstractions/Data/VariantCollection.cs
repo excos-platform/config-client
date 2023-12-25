@@ -8,4 +8,12 @@ namespace Excos.Options.Abstractions.Data;
 public class VariantCollection : KeyedCollection<string, Variant>
 {
     protected override string GetKeyForItem(Variant item) => item.Id;
+
+    public void AddRange(IEnumerable<Variant> variants)
+    {
+        foreach(var variant in variants)
+        {
+            Add(variant);
+        }
+    }
 }
