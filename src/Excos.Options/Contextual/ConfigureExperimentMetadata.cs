@@ -5,12 +5,12 @@ using Excos.Options.Abstractions.Data;
 
 namespace Excos.Options.Contextual;
 
-internal class ConfigureExperimentMetadata : IConfigureOptions
+internal class ConfigureFeatureMetadata : IConfigureOptions
 {
-    private readonly ExperimentMetadata? _metadata;
+    private readonly FeatureMetadata? _metadata;
     private readonly string _propertyName;
 
-    public ConfigureExperimentMetadata(ExperimentMetadata? metadata, string propertyName)
+    public ConfigureFeatureMetadata(FeatureMetadata? metadata, string propertyName)
     {
         _metadata = metadata;
         _propertyName = propertyName;

@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
                 new LoadContextualOptions<TOptions>(
                     name,
                     section,
-                    sp.GetServices<IExperimentProvider>(),
-                    sp.GetServices<IExperimentVariantOverride>()));
+                    sp.GetServices<IFeatureProvider>(),
+                    sp.GetServices<IFeatureVariantOverride>()));
     }
 }

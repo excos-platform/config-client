@@ -22,14 +22,14 @@ internal partial class WeatherForecastContext
 ```
 
 Define your options class like you usually would.
-You can add the `ExperimentMetadata` property to your options model to receive experiment metadata, such as the variant IDs.
+You can add the `FeatureMetadata` property to your options model to receive experiment metadata, such as the variant IDs.
 
 ```csharp
 internal class WeatherForecastOptions
 {
     public string TemperatureScale { get; set; } = "Celsius"; // Celsius or Fahrenheit
     public int ForecastDays { get; set; }
-    public ExperimentMetadata ExperimentMetadata { get; set; }
+    public FeatureMetadata FeatureMetadata { get; set; }
 }
 ```
 
@@ -81,9 +81,9 @@ internal class WeatherForecastService
 You can also allow overriding the variant based on some context - example:
 
 ```csharp
-class TestUserOverride : IExperimentVariantOverride
+class TestUserOverride : IFeatureVariantOverride
 {
-    public Task<VariantOverride?> TryOverrideAsync<TContext>(Experiment experiment, TContext optionsContext, CancellationToken cancellationToken)
+    public Task<VariantOverride?> TryOverrideAsync<TContext>(Feature experiment, TContext optionsContext, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
         var receiver = new Receiver();
@@ -113,6 +113,8 @@ class TestUserOverride : IExperimentVariantOverride
     }
 }
 ```
+
+You can use the Excos framework to rollout features or as feature gates. In that case your experiment would have only one variant and you can control the rollout allocation similarly to how you would partition your audience for experiments.
 
 ## Roadmap
 

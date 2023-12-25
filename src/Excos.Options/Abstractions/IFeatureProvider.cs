@@ -5,7 +5,7 @@ using Excos.Options.Abstractions.Data;
 
 namespace Excos.Options.Abstractions;
 
-public interface IExperimentProvider
+public interface IFeatureProvider
 {
-    Task<IEnumerable<Experiment>> GetExperimentsAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<Feature>> GetExperimentsAsync(CancellationToken cancellationToken);
 }

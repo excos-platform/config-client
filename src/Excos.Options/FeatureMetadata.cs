@@ -3,15 +3,15 @@
 
 namespace Excos.Options;
 
-public class ExperimentMetadata
+public class FeatureMetadata
 {
-    public List<ExperimentMetadataItem> Experiments { get; } = new();
+    public List<FeatureMetadataItem> Features { get; } = new();
 }
 
-public class ExperimentMetadataItem
+public class FeatureMetadataItem
 {
-    public required string ExperimentName { get; set; }
-    public required string ExperimentProvider { get; set; }
+    public required string FeatureName { get; set; }
+    public required string FeatureProvider { get; set; }
     public required string VariantId { get; set; }
     public bool IsOverridden { get; set; }
     public string? OverrideProviderName { get; set; }

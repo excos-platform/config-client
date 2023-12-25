@@ -3,7 +3,7 @@
 
 namespace Excos.Options.Abstractions.Data;
 
-public class Experiment
+public class Feature
 {
     public required string Name { get; set; }
     public required string ProviderName { get; set; }

@@ -12,14 +12,15 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 {
     private readonly string? _name;
     private readonly string _configurationSection;
-    private readonly IEnumerable<IExperimentProvider> _experimentProviders;
-    private readonly IEnumerable<IExperimentVariantOverride> _variantOverrides;
+    private readonly IEnumerable<IFeatureProvider> _featureProviders;
+    private readonly IEnumerable<IFeatureVariantOverride> _variantOverrides;
+    private static Lazy<string?> s_optionsMetadataPropertyName = new(TryGetMetadataPropertyName, LazyThreadSafetyMode.PublicationOnly);
 
-    public LoadContextualOptions(string? name, string configurationSection, IEnumerable<IExperimentProvider> experimentProviders, IEnumerable<IExperimentVariantOverride> variantOverrides)
+    public LoadContextualOptions(string? name, string configurationSection, IEnumerable<IFeatureProvider> featureProviders, IEnumerable<IFeatureVariantOverride> variantOverrides)
     {
         _name = name;
         _configurationSection = configurationSection;
-        _experimentProviders = experimentProviders;
+        _featureProviders = featureProviders;
         _variantOverrides = variantOverrides;
     }
 
@@ -44,35 +45,35 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         context.PopulateReceiver(receiver);
 
         // only instantiate metadata if expected by options type
-        var optionsMetadataPropertyName = TryGetMetadataPropertyName();
-        ExperimentMetadata? metadataCollection = optionsMetadataPropertyName != null ? new() : null;
+        var optionsMetadataPropertyName = s_optionsMetadataPropertyName.Value;
+        FeatureMetadata? metadataCollection = optionsMetadataPropertyName != null ? new() : null;
 
-        foreach (var provider in _experimentProviders)
+        foreach (var provider in _featureProviders)
         {
-            var experiments = await provider.GetExperimentsAsync(cancellationToken);
+            var features = await provider.GetExperimentsAsync(cancellationToken);
 
-            var applicableExperiments = experiments.Where(e => receiver.Satisfies(e.Filters));
-            foreach (var experiment in applicableExperiments)
+            var applicableFeatures = features.Where(e => receiver.Satisfies(e.Filters));
+            foreach (var feature in applicableFeatures)
             {
-                var variantOverride = await TryGetVariantOverrideAsync(experiment, context, cancellationToken);
+                var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken);
 
                 if (variantOverride != null)
                 {
                     var (variant, metadata) = variantOverride.Value;
                     configure.ConfigureOptions.Add(variant.Configuration);
-                    metadataCollection?.Experiments.Add(new()
+                    metadataCollection?.Features.Add(new()
                     {
-                        ExperimentName = experiment.Name,
-                        ExperimentProvider = experiment.ProviderName,
+                        FeatureName = feature.Name,
+                        FeatureProvider = feature.ProviderName,
                         VariantId = variant.Id,
                         IsOverridden = true,
-                        OverrideProviderName = variantOverride.Value.metadata.OverrideProviderName,
+                        OverrideProviderName = metadata.OverrideProviderName,
                     });
                 }
                 else
                 {
-                    var allocationSpot = receiver.GetIdentifierAllocationSpot(experiment.Salt);
-                    var matchingVariant = experiment.Variants
+                    var allocationSpot = receiver.GetIdentifierAllocationSpot(feature.Salt);
+                    var matchingVariant = feature.Variants
                         .Where(v => v.Allocation.Contains(allocationSpot))
                         .Where(v => receiver.Satisfies(v.Filters))
                         .OrderByDescending(v => v.Filters.Count) // the one with the most filters first
@@ -82,10 +83,10 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                     if (matchingVariant != null)
                     {
                         configure.ConfigureOptions.Add(matchingVariant.Configuration);
-                        metadataCollection?.Experiments.Add(new()
+                        metadataCollection?.Features.Add(new()
                         {
-                            ExperimentName = experiment.Name,
-                            ExperimentProvider = experiment.ProviderName,
+                            FeatureName = feature.Name,
+                            FeatureProvider = feature.ProviderName,
                             VariantId = matchingVariant.Id,
                         });
                     }
@@ -93,19 +94,19 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
             }
         }
 
-        if (metadataCollection?.Experiments.Count > 0)
+        if (metadataCollection?.Features.Count > 0)
         {
-            configure.ConfigureOptions.Add(new ConfigureExperimentMetadata(metadataCollection, optionsMetadataPropertyName!));
+            configure.ConfigureOptions.Add(new ConfigureFeatureMetadata(metadataCollection, optionsMetadataPropertyName!));
         }
 
         return configure;
     }
 
-    private string? TryGetMetadataPropertyName()
+    private static string? TryGetMetadataPropertyName()
     {
         foreach (var property in typeof(TOptions).GetProperties())
         {
-            if (property.PropertyType == typeof(ExperimentMetadata))
+            if (property.PropertyType == typeof(FeatureMetadata))
             {
                 return property.Name;
             }
@@ -114,13 +115,13 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         return null;
     }
 
-    private async Task<(Variant variant, VariantOverride metadata)?> TryGetVariantOverrideAsync<TContext>(Experiment experiment, TContext optionsContext, CancellationToken cancellationToken)
+    private async Task<(Variant variant, VariantOverride metadata)?> TryGetVariantOverrideAsync<TContext>(Feature feature, TContext optionsContext, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
         foreach (var @override in _variantOverrides)
         {
-            var variantOverride = await @override.TryOverrideAsync(experiment, optionsContext, cancellationToken);
-            if (variantOverride != null && experiment.Variants.TryGetValue(variantOverride.Id, out var selectedVariant))
+            var variantOverride = await @override.TryOverrideAsync(feature, optionsContext, cancellationToken);
+            if (variantOverride != null && feature.Variants.TryGetValue(variantOverride.Id, out var selectedVariant))
             {
                 return (selectedVariant, variantOverride);
             }

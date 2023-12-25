@@ -7,10 +7,10 @@ using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Abstractions;
 
-public interface IExperimentVariantOverride
+public interface IFeatureVariantOverride
 {
     /// <summary>
-    /// Checks if the variant for <paramref name="experiment"/> has been overridden for the given context.
+    /// Checks if the variant for <paramref name="feature"/> has been overridden for the given context.
     /// </summary>
     /// <remarks>
     /// You can use this interface to implement override providers from various sources.
@@ -18,9 +18,9 @@ public interface IExperimentVariantOverride
     /// Or you can override the variant based on a list of test user ids.
     /// If there's multiple overrides registered, the first one which returns a value will be applied.
     /// </remarks> 
-    /// <param name="experiment">Experiment.</param>
+    /// <param name="feature">Experiment.</param>
     /// <param name="optionsContext">Context.</param>
-    /// <returns>Variant override that should be used for the experiment, or <c>null</c> if no override is made.</returns>
-    Task<VariantOverride?> TryOverrideAsync<TContext>(Experiment experiment, TContext optionsContext, CancellationToken cancellationToken)
+    /// <returns>Variant override that should be used for the <paramref name="feature"/>, or <c>null</c> if no override is made.</returns>
+    Task<VariantOverride?> TryOverrideAsync<TContext>(Feature feature, TContext optionsContext, CancellationToken cancellationToken)
         where TContext : IOptionsContext;
 }
