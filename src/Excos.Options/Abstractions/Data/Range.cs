@@ -23,7 +23,7 @@ public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpan
     public T End { get; }
     public RangeType Type { get; }
 
-    public bool Contains(double value)
+    public bool Contains(T value)
     {
         if (Type.HasFlag(RangeType.IncludeStart))
         {

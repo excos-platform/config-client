@@ -14,7 +14,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     private readonly string _configurationSection;
     private readonly IEnumerable<IFeatureProvider> _featureProviders;
     private readonly IEnumerable<IFeatureVariantOverride> _variantOverrides;
-    private static Lazy<string?> s_optionsMetadataPropertyName = new(TryGetMetadataPropertyName, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<string?> OptionsMetadataPropertyName = new(TryGetMetadataPropertyName, LazyThreadSafetyMode.PublicationOnly);
 
     public LoadContextualOptions(string? name, string configurationSection, IEnumerable<IFeatureProvider> featureProviders, IEnumerable<IFeatureVariantOverride> variantOverrides)
     {
@@ -45,7 +45,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         context.PopulateReceiver(receiver);
 
         // only instantiate metadata if expected by options type
-        var optionsMetadataPropertyName = s_optionsMetadataPropertyName.Value;
+        var optionsMetadataPropertyName = OptionsMetadataPropertyName.Value;
         FeatureMetadata? metadataCollection = optionsMetadataPropertyName != null ? new() : null;
 
         foreach (var provider in _featureProviders)

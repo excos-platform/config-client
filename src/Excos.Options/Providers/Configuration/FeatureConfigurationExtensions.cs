@@ -4,6 +4,7 @@
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
+using Excos.Options.Providers.Configuration.FilterParsers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,7 +15,9 @@ public static class FeatureConfigurationExtensions
 {
     public static void ConfigureExcosFeatures(this IServiceCollection services, string sectionName)
     {
-        // todo add built-in filter parsers (if possible at index 0)
+        services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureFilterParser), typeof(StringFilterParser), ServiceLifetime.Singleton));
+        services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureFilterParser), typeof(RangeFilterParser), ServiceLifetime.Singleton));
+
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureProvider), typeof(OptionsFeatureProvider), ServiceLifetime.Singleton));
         services.AddOptions<FeatureCollection>()
             .Configure<IEnumerable<IFeatureFilterParser>, IConfiguration>((features, filterParsers, configuration) =>

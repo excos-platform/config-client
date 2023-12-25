@@ -62,6 +62,43 @@ public class ConfigurationBasedFeaturesTest
                             }
                         }
                     }
+                },
+                "SessionRanger": {
+                    "Variants": {
+                        "Guids": {
+                            "Allocation": "100%",
+                            "Filters": {
+                                "SessionId": "[d0000000-0000-0000-0000-000000000000;f0000000-0000-0000-0000-000000000000)"
+                            },
+                            "Settings": {
+                                "Test": {
+                                    "Label": "G"
+                                }
+                            }
+                        },
+                        "Dates": {
+                            "Allocation": "100%",
+                            "Filters": {
+                                "SessionId": "[2023-01-01;2024-01-01)"
+                            },
+                            "Settings": {
+                                "Test": {
+                                    "Label": "D"
+                                }
+                            }
+                        },
+                        "Doubles": {
+                            "Allocation": "100%",
+                            "Filters": {
+                                "SessionId": "[50;75]"
+                            },
+                            "Settings": {
+                                "Test": {
+                                    "Label": "N"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -82,11 +119,12 @@ public class ConfigurationBasedFeaturesTest
         
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
         {
-            UserId = "user1"
+            UserId = "user1",
+            SessionId = "d48d716f-6e85-4eb5-a81f-dd8d14472832",
         }, default);
 
         Assert.Equal(2, options.Size);
-        Assert.Equal("S", options.Label);
+        Assert.Equal("G", options.Label);
     }
 
     private class TestOptions
