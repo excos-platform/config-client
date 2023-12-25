@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.0.0-rtm.23558.11,8.0.0)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
 </Project>

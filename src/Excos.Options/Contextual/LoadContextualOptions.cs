@@ -43,7 +43,9 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         var receiver = new ContextReceiver();
         context.PopulateReceiver(receiver);
 
-        var metadataCollection = new ExperimentMetadata();
+        // only instantiate metadata if expected by options type
+        var optionsMetadataPropertyName = TryGetMetadataPropertyName();
+        ExperimentMetadata? metadataCollection = optionsMetadataPropertyName != null ? new() : null;
 
         foreach (var provider in _experimentProviders)
         {
@@ -52,22 +54,20 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
             var applicableExperiments = experiments.Where(e => receiver.Satisfies(e.Filters));
             foreach (var experiment in applicableExperiments)
             {
-                Variant? selectedVariant = null;
-                ExperimentMetadataItem? metadata = null;
-
                 var variantOverride = await TryGetVariantOverrideAsync(experiment, context, cancellationToken);
 
                 if (variantOverride != null)
                 {
-                    selectedVariant = variantOverride.Value.variant;
-                    metadata = new()
+                    var (variant, metadata) = variantOverride.Value;
+                    configure.ConfigureOptions.Add(variant.Configuration);
+                    metadataCollection?.Experiments.Add(new()
                     {
                         ExperimentName = experiment.Name,
                         ExperimentProvider = experiment.ProviderName,
-                        VariantId = selectedVariant.Id,
+                        VariantId = variant.Id,
                         IsOverridden = true,
                         OverrideProviderName = variantOverride.Value.metadata.OverrideProviderName,
-                    };
+                    });
                 }
                 else
                 {
@@ -81,33 +81,37 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
                     if (matchingVariant != null)
                     {
-                        selectedVariant = matchingVariant;
-                        metadata = new()
+                        configure.ConfigureOptions.Add(matchingVariant.Configuration);
+                        metadataCollection?.Experiments.Add(new()
                         {
                             ExperimentName = experiment.Name,
                             ExperimentProvider = experiment.ProviderName,
-                            VariantId = selectedVariant.Id,
-                        };
-                    }
-                }
-
-                if (selectedVariant != null)
-                {
-                    configure.ConfigureOptions.Add(selectedVariant.Configuration);
-                    if (metadata != null)
-                    {
-                        metadataCollection.Experiments.Add(metadata);
+                            VariantId = matchingVariant.Id,
+                        });
                     }
                 }
             }
         }
 
-        if (metadataCollection.Experiments.Count > 0)
+        if (metadataCollection?.Experiments.Count > 0)
         {
-            configure.ConfigureOptions.Add(new ConfigureExperimentMetadata(metadataCollection));
+            configure.ConfigureOptions.Add(new ConfigureExperimentMetadata(metadataCollection, optionsMetadataPropertyName!));
         }
 
         return configure;
+    }
+
+    private string? TryGetMetadataPropertyName()
+    {
+        foreach (var property in typeof(TOptions).GetProperties())
+        {
+            if (property.PropertyType == typeof(ExperimentMetadata))
+            {
+                return property.Name;
+            }
+        }
+
+        return null;
     }
 
     private async Task<(Variant variant, VariantOverride metadata)?> TryGetVariantOverrideAsync<TContext>(Experiment experiment, TContext optionsContext, CancellationToken cancellationToken)

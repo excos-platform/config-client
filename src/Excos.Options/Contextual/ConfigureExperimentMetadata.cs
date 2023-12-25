@@ -8,21 +8,17 @@ namespace Excos.Options.Contextual;
 internal class ConfigureExperimentMetadata : IConfigureOptions
 {
     private readonly ExperimentMetadata? _metadata;
+    private readonly string _propertyName;
 
-    public ConfigureExperimentMetadata(ExperimentMetadata? metadata)
+    public ConfigureExperimentMetadata(ExperimentMetadata? metadata, string propertyName)
     {
         _metadata = metadata;
+        _propertyName = propertyName;
     }
 
     public void Configure<TOptions>(TOptions input, string section) where TOptions : class
     {
-        foreach (var property in typeof(TOptions).GetProperties())
-        {
-            if (property.PropertyType == typeof(ExperimentMetadata))
-            {
-                property.SetValue(input, _metadata);
-                return;
-            }
-        }
+        var property = typeof(TOptions).GetProperty(_propertyName);
+        property?.SetValue(input, _metadata);
     }
 }
