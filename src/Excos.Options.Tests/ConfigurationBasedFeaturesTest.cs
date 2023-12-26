@@ -7,7 +7,6 @@ using Excos.Options.Providers.Configuration;
 using Excos.Options.Tests.Contextual;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options.Contextual;
 using Xunit;
 
