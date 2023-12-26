@@ -1,5 +1,7 @@
 # Data Model
 
+This document briefly describes the data model for features/experiments used in Excos.
+
 A **unit** is either a user ID or a session ID, or some other semi-persistent identifier for which we will compute experiment allocation.
 
 An **experiment** is described by name and **variants**, each of which holds allocation information.
