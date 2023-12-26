@@ -37,6 +37,6 @@ internal class RangeFilterParser : IFeatureFilterParser
         }
 
         filteringCondition = null;
-        return false;        
+        return false;
     }
 }

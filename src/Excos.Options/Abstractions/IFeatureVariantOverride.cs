@@ -7,6 +7,9 @@ using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Abstractions;
 
+/// <summary>
+/// A source of variant overrides.
+/// </summary>
 public interface IFeatureVariantOverride
 {
     /// <summary>

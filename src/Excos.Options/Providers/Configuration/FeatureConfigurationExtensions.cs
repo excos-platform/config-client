@@ -102,9 +102,9 @@ public static class FeatureConfigurationExtensions
         foreach (var section in filtersConfiguration.GetChildren())
         {
             var propertyName = section.Key;
-            
+
             IEnumerable<IFilteringCondition>? filteringConditions = null;
-            
+
             var children = section.GetChildren();
             if (children.FirstOrDefault() is IConfigurationSection child && child.Key == "0")
             {
@@ -112,7 +112,7 @@ public static class FeatureConfigurationExtensions
                 filteringConditions = children.Select(c => ParseFilter(filterParsers, c))
                     .Where(f => f != null).Cast<IFilteringCondition>();
             }
-            
+
             if (filteringConditions == null)
             {
                 // this is a single value, let's try to parse it

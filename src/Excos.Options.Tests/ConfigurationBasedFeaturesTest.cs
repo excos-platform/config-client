@@ -108,17 +108,16 @@ public class ConfigurationBasedFeaturesTest
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
-        services.AddOptions<TestOptions>().BindConfiguration("Test");
         services.ConfigureExcos<TestOptions>("Test");
         services.ConfigureExcosFeatures("Features");
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
 
         var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions>>();
-        
+
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
         {
-            UserId = "user1",
+            Identifier = "user1",
             SessionId = "d48d716f-6e85-4eb5-a81f-dd8d14472832",
         }, default);
 

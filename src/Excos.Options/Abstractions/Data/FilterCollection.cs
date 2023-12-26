@@ -11,7 +11,7 @@ public class FilterCollection : KeyedCollection<string, Filter>
 
     public void AddRange(IEnumerable<Filter> filters)
     {
-        foreach(var filter in filters)
+        foreach (var filter in filters)
         {
             Add(filter);
         }

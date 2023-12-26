@@ -16,7 +16,7 @@ public class OptionsFeatureProvider : IFeatureProvider
         _options = options;
     }
 
-    public Task<IEnumerable<Feature>> GetExperimentsAsync(CancellationToken cancellationToken)
+    public Task<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
     {
         return Task.FromResult<IEnumerable<Feature>>(_options.CurrentValue);
     }

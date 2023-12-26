@@ -50,7 +50,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
         foreach (var provider in _featureProviders)
         {
-            var features = await provider.GetExperimentsAsync(cancellationToken);
+            var features = await provider.GetFeaturesAsync(cancellationToken);
 
             var applicableFeatures = features
                 .Where(e => e.Enabled)

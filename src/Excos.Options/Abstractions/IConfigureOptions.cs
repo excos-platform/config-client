@@ -8,5 +8,11 @@ namespace Excos.Options.Abstractions;
 /// </summary>
 public interface IConfigureOptions
 {
+    /// <summary>
+    /// Configure <paramref name="input"/> object using <paramref name="section"/> to choose specific data for the options.
+    /// </summary>
+    /// <typeparam name="TOptions">Options type.</typeparam>
+    /// <param name="input">Options object.</param>
+    /// <param name="section">Configuration section for the options.</param>
     void Configure<TOptions>(TOptions input, string section) where TOptions : class;
 }

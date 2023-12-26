@@ -39,10 +39,36 @@ Bind the options to a configuration section.
 services.ConfigureExcos<WeatherForecastOptions>("Forecast");
 ```
 
-Configure Excos experiment via configuration or fluent code.
+Configure Excos experiment via configuration or code (see tests project for examples).
 
-```
-coming soon...
+```json
+{
+    "Features": {
+        "Forecast": {
+            "Variants": {
+                "Celsius": {
+                    "Allocation": "100%",
+                    "Settings": {
+                        "Forecast": {
+                            "TemperatureScale": "Celsius"
+                        }
+                    }
+                },
+                "Fahrenheit": {
+                    "Allocation": "100%",
+                    "Filters": {
+                        "Country": "US"
+                    },
+                    "Settings": {
+                        "Forecast": {
+                            "TemperatureScale": "Fahrenheit"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 ```
 
 Inject `IContextualOptions` into your service.

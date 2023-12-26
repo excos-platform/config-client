@@ -5,8 +5,21 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Excos.Options.Abstractions.Data;
 
+/// <summary>
+/// A range represents a spectrum of comparable values between a start and an end.
+/// </summary>
+/// <typeparam name="T">Type of values in the range.</typeparam>
 public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpanParsable<T>
 {
+    /// <summary>
+    /// Creates a new range from <paramref name="start"/> to <paramref name="end"/>.
+    /// </summary>
+    /// <remarks>
+    /// Ensures that <paramref name="end"/> must be greater or equal to <paramref name="start"/>.
+    /// </remarks> 
+    /// <param name="start">Start value.</param>
+    /// <param name="end">End value.</param>
+    /// <param name="type">Whether the ends of the range are included or excluded.</param>
     public Range(T start, T end, RangeType type)
     {
         if (start.CompareTo(end) > 0)
@@ -23,6 +36,9 @@ public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpan
     public T End { get; }
     public RangeType Type { get; }
 
+    /// <summary>
+    /// Checks if the value is contained within the range.
+    /// </summary>
     public bool Contains(T value)
     {
         if (Type.HasFlag(RangeType.IncludeStart))
@@ -114,8 +130,23 @@ public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpan
 [Flags]
 public enum RangeType
 {
+    /// <summary>
+    /// Range is open on both ends.
+    /// </summary>
     ExcludeBoth = 0,
+
+    /// <summary>
+    /// Range is closed on the left, the start value is part of the range.
+    /// </summary>
     IncludeStart = 1,
+
+    /// <summary>
+    /// Range is closed on the right, the end value is part of the range.
+    /// </summary>
     IncludeEnd = 2,
+
+    /// <summary>
+    /// Range is closed on both ends.
+    /// </summary>
     IncludeBoth = 3,
 }

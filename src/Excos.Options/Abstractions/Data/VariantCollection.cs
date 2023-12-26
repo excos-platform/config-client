@@ -11,7 +11,7 @@ public class VariantCollection : KeyedCollection<string, Variant>
 
     public void AddRange(IEnumerable<Variant> variants)
     {
-        foreach(var variant in variants)
+        foreach (var variant in variants)
         {
             Add(variant);
         }

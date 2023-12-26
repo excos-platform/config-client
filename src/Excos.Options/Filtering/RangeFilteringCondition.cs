@@ -21,7 +21,7 @@ public class RangeFilteringCondition<F> : IFilteringCondition
     {
         if (typeof(T) == typeof(F))
         {
-            return _range.Contains(Unsafe.As<T,F>(ref value));
+            return _range.Contains(Unsafe.As<T, F>(ref value));
         }
         else if (typeof(T).IsAssignableTo(typeof(F)) && value != null)
         {

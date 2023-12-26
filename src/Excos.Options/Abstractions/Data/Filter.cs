@@ -3,6 +3,9 @@
 
 namespace Excos.Options.Abstractions.Data;
 
+/// <summary>
+/// A feature filter applied over a user provided context.
+/// </summary>
 public class Filter
 {
     /// <summary>
