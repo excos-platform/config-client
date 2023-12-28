@@ -12,4 +12,5 @@ internal partial class ContextWithIdentifier
     public string UserId { get; set; } = string.Empty;
     public string SessionId { get; set; } = string.Empty;
     public string Market { get; set; } = string.Empty;
+    public int AgeGroup { get; set; }
 }

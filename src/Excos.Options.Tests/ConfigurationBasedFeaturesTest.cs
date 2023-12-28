@@ -125,6 +125,67 @@ public class ConfigurationBasedFeaturesTest
         Assert.Equal("G", options.Label);
     }
 
+    [Theory]
+    [InlineData("U", 1, 5)]
+    [InlineData("US", 1, 5)]
+    [InlineData("US", 2, 5)]
+    [InlineData("US", 3, 0)]
+    [InlineData("USA", 1, 5)]
+    [InlineData("UK", 1, 5)]
+    [InlineData("PL", 1, 5)]
+    [InlineData("C", 1, 0)]
+    [InlineData("CA", 1, 5)]
+    [InlineData("CAD", 1, 5)]
+    [InlineData("DE", 1, 0)]
+    [InlineData("DE", 0, 0)]
+    public async Task ConfigurationBasedFilters_Test(string market, int ageGroup, int sizeResult)
+    {
+        const string appsettings =
+        """
+        {
+            "Features": {
+                "Filtered": {
+                    "Salt": "abcdef",
+                    "Filters": {
+                        "Market": ["U*", "PL", "^C.+$"],
+                        "AgeGroup": ["1", "[2;3)"]
+                    },
+                    "Variants": {
+                        "A": {
+                            "Allocation": "100%",
+                            "Settings": {
+                                "Test": {
+                                    "Size": "5"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """;
+        var configuration = new ConfigurationBuilder()
+            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appsettings)))
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.ConfigureExcos<TestOptions>("Test");
+        services.ConfigureExcosFeatures("Features");
+
+        var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+
+        var options = await contextualOptions.GetAsync(new ContextWithIdentifier
+        {
+            Market = market,
+            AgeGroup = ageGroup,
+        }, default);
+
+        Assert.Equal(sizeResult, options.Size);
+    }
+
     private class TestOptions
     {
         public int Size { get; set; }

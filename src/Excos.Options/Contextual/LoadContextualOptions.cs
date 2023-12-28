@@ -79,7 +79,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                         .Where(v => v.Allocation.Contains(allocationSpot))
                         .Where(v => receiver.Satisfies(v.Filters))
                         .OrderByDescending(v => v.Filters.Count) // the one with the most filters first
-                        .OrderBy(v => v.Priority) // the one with lowest priority first (if specified) // TODO needs to be unit tested for null handling
+                        .OrderBy(v => v.Priority, PriorityComparer.Instance) // the one with lowest priority first (if specified)
                         .FirstOrDefault();
 
                     if (matchingVariant != null)
@@ -130,5 +130,20 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Comparer for priority values where nulls are always greater than values so in ascending order will be considered last 
+    /// </summary>
+    private class PriorityComparer : IComparer<int?>
+    {
+        public static PriorityComparer Instance { get; } = new PriorityComparer();
+        public int Compare(int? x, int? y)
+        {
+            if (x == y) return 0;
+            if (x == null) return 1;
+            if (y == null) return -1;
+            return x.Value.CompareTo(y.Value);
+        }
     }
 }

@@ -26,4 +26,14 @@ public struct Allocation
     }
 
     public bool Contains(double value) => _range.Contains(value);
+
+    public static Allocation Percentage(double percentage)
+    {
+        if (percentage < 0 || percentage > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(percentage), "Allocation must be a range between 0% and 100%.");
+        }
+
+        return new Allocation(new Range<double>(0, percentage / 100, RangeType.IncludeBoth));
+    } 
 }
