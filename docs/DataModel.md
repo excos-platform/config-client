@@ -22,6 +22,7 @@ Given the context T we look through all experiments that match T over filtering 
             "filters": {
                 "country": ["US", "UK"]
             },
+            "allocationUnit": "userId",
             "salt": "nvjdn6z8",
             "variants": {
                 "A": {

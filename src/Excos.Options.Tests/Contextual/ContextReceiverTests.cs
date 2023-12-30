@@ -9,59 +9,62 @@ namespace Excos.Options.Tests.Contextual;
 
 public class ContextReceiverTests
 {
-    [Fact]
-    public void Receive_WithEmptyIdentifier_ReturnsTheSameAllocation()
+    /// <summary>
+    /// Ensure there is no randomness when handling the same identifier.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("abc")]
+    public void Allocation_Receive_WithSameIdentifier_ReturnsTheSameAllocation(string value)
     {
-        ContextWithIdentifier context1 = new();
-        ContextReceiver receiver1 = PopulateReceiver(context1);
-        ContextWithIdentifier context2 = new();
-        ContextReceiver receiver2 = PopulateReceiver(context2);
+        ContextWithIdentifier context1 = new() { Identifier = value };
+        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
+        ContextWithIdentifier context2 = new() { Identifier = value };
+        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(string.Empty);
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(string.Empty);
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
 
         Assert.Equal(allocationSpot1, allocationSpot2);
     }
 
     [Fact]
-    public void Receive_WithAnyIdProperty_ReturnsTheSameAllocation()
+    public void Allocation_Receive_WithAnyIdProperty_ReturnsTheSameAllocation()
     {
         const string id = "abc";
         ContextWithIdentifier context1 = new() { Identifier = id };
-        ContextReceiver receiver1 = PopulateReceiver(context1);
+        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
         ContextWithIdentifier context2 = new() { UserId = id };
-        ContextReceiver receiver2 = PopulateReceiver(context2);
+        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
         ContextWithIdentifier context3 = new() { SessionId = id };
-        ContextReceiver receiver3 = PopulateReceiver(context3);
+        AllocationContextReceiver receiver3 = PopulateAllocationReceiver(context3, nameof(context3.SessionId));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(string.Empty);
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(string.Empty);
-        var allocationSpot3 = receiver3.GetIdentifierAllocationSpot(string.Empty);
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
+        var allocationSpot3 = receiver3.GetIdentifierAllocationSpot();
 
         Assert.Equal(allocationSpot1, allocationSpot2);
         Assert.Equal(allocationSpot1, allocationSpot3);
     }
 
     [Fact]
-    public void Receive_WithTwoIdProperties_IfTheFirstIsTheSame_ReturnsTheSameAllocation()
+    public void Receive_WhenAskedAboutNonExistentProperty_ReturnsSameAllocationAsEmpty()
     {
-        // IMPORTANT
-        // Properties are populated in the receiver in alphabetical order
-        const string id = "abc", id2 = "cde", id3 = "efg";
-        ContextWithIdentifier context1 = new() { SessionId = id, UserId = id2 };
-        ContextReceiver receiver1 = PopulateReceiver(context1);
-        ContextWithIdentifier context2 = new() { SessionId = id, UserId = id3 };
-        ContextReceiver receiver2 = PopulateReceiver(context2);
+        ContextWithIdentifier context1 = new() { Identifier = "x", UserId = "y", SessionId = "z"};
+        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, "AnonymousId");
+        ContextWithIdentifier context2 = new();
+        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(string.Empty);
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(string.Empty);
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
 
         Assert.Equal(allocationSpot1, allocationSpot2);
     }
 
-    private static ContextReceiver PopulateReceiver<TContext>(TContext context) where TContext : IOptionsContext
+    private static AllocationContextReceiver PopulateAllocationReceiver<TContext>(TContext context, string propertyName) where TContext : IOptionsContext
     {
-        ContextReceiver receiver = new();
+        AllocationContextReceiver receiver = new(propertyName, salt: string.Empty);
         context.PopulateReceiver(receiver);
         return receiver;
     }

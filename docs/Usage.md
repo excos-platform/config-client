@@ -5,7 +5,7 @@
 Following the Options.Contextual docs:
 
 1\. Define your context class that will be passed to `IContextualOptions.GetAsync()`.
-The first property named `Identifier` or ending with `Id` will be used for the allocation calculations.
+By default `UserId` property is used for allocation calculations. You can override it globally by configuring `ExcosOptions` or override it for a single feature by configuring the `AllocationUnit` property.
 
 ```csharp
 [OptionsContext]

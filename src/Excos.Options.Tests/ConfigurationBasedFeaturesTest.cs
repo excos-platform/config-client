@@ -63,6 +63,7 @@ public class ConfigurationBasedFeaturesTest
                     }
                 },
                 "SessionRanger": {
+                    "AllocationUnit": "SessionId",
                     "Variants": {
                         "Guids": {
                             "Allocation": "100%",
@@ -117,7 +118,7 @@ public class ConfigurationBasedFeaturesTest
 
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
         {
-            Identifier = "user1",
+            UserId = "user1",
             SessionId = "d48d716f-6e85-4eb5-a81f-dd8d14472832",
         }, default);
 

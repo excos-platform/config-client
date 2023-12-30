@@ -3,6 +3,7 @@
 
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Contextual;
@@ -14,14 +15,21 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     private readonly string _configurationSection;
     private readonly IEnumerable<IFeatureProvider> _featureProviders;
     private readonly IEnumerable<IFeatureVariantOverride> _variantOverrides;
+    private readonly IOptionsMonitor<ExcosOptions> _options;
     private static readonly Lazy<string?> OptionsMetadataPropertyName = new(TryGetMetadataPropertyName, LazyThreadSafetyMode.PublicationOnly);
 
-    public LoadContextualOptions(string? name, string configurationSection, IEnumerable<IFeatureProvider> featureProviders, IEnumerable<IFeatureVariantOverride> variantOverrides)
+    public LoadContextualOptions(
+        string? name,
+        string configurationSection,
+        IEnumerable<IFeatureProvider> featureProviders,
+        IEnumerable<IFeatureVariantOverride> variantOverrides,
+        IOptionsMonitor<ExcosOptions> options)
     {
         _name = name;
         _configurationSection = configurationSection;
         _featureProviders = featureProviders;
         _variantOverrides = variantOverrides;
+        _options = options;
     }
 
     public ValueTask<IConfigureContextualOptions<TOptions>> LoadAsync<TContext>(string name, in TContext context, CancellationToken cancellationToken) where TContext : IOptionsContext
@@ -41,8 +49,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     {
         var configure = new ConfigureContextualOptions<TOptions>(_configurationSection);
 
-        var receiver = new ContextReceiver();
-        context.PopulateReceiver(receiver);
+        var filteringReceiver = new FilteringContextReceiver();
+        context.PopulateReceiver(filteringReceiver);
 
         // only instantiate metadata if expected by options type
         var optionsMetadataPropertyName = OptionsMetadataPropertyName.Value;
@@ -54,7 +62,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
             var applicableFeatures = features
                 .Where(e => e.Enabled)
-                .Where(e => receiver.Satisfies(e.Filters));
+                .Where(e => filteringReceiver.Satisfies(e.Filters));
             foreach (var feature in applicableFeatures)
             {
                 var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken);
@@ -74,10 +82,14 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                 }
                 else
                 {
-                    var allocationSpot = receiver.GetIdentifierAllocationSpot(feature.Salt);
+                    var allocationUnit = feature.AllocationUnit ?? _options.CurrentValue.DefaultAllocationUnit;
+                    var allocationReceiver = new AllocationContextReceiver(allocationUnit, feature.Salt);
+                    context.PopulateReceiver(allocationReceiver);
+                    var allocationSpot = allocationReceiver.GetIdentifierAllocationSpot();
+
                     var matchingVariant = feature.Variants
                         .Where(v => v.Allocation.Contains(allocationSpot))
-                        .Where(v => receiver.Satisfies(v.Filters))
+                        .Where(v => filteringReceiver.Satisfies(v.Filters))
                         .OrderByDescending(v => v.Filters.Count) // the one with the most filters first
                         .OrderBy(v => v.Priority, PriorityComparer.Instance) // the one with lowest priority first (if specified)
                         .FirstOrDefault();

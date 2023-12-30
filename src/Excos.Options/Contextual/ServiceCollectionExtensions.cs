@@ -4,6 +4,7 @@
 using Excos.Options.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Contextual;
@@ -35,6 +36,7 @@ public static class ServiceCollectionExtensions
                     name,
                     section,
                     sp.GetServices<IFeatureProvider>(),
-                    sp.GetServices<IFeatureVariantOverride>()));
+                    sp.GetServices<IFeatureVariantOverride>(),
+                    sp.GetRequiredService<IOptionsMonitor<ExcosOptions>>()));
     }
 }

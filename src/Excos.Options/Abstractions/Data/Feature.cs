@@ -35,6 +35,12 @@ public class Feature
     public VariantCollection Variants { get; } = new();
 
     /// <summary>
+    /// Name of the property in context which should be used for allocation calculation for this feature.
+    /// If not set, the value <see cref="ExcosOptions.DefaultAllocationUnit"/> is used. 
+    /// </summary>
+    public string? AllocationUnit { get; set; }
+
+    /// <summary>
     /// Salt used for variant allocation calculations.
     /// By default it's just the name of the provider and feature.
     /// </summary>
