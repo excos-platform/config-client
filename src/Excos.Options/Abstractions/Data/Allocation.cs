@@ -6,7 +6,7 @@ namespace Excos.Options.Abstractions.Data;
 /// <summary>
 /// Allocation is a range between 0 and 100% used to determine if a given feature variant should be active.
 /// </summary>
-public struct Allocation
+public readonly struct Allocation
 {
     private readonly Range<double> _range;
 

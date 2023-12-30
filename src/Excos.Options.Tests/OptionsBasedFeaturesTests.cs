@@ -380,18 +380,17 @@ public class OptionsBasedFeaturesTests
             _variantId = variantId;
         }
 
-        public Task<VariantOverride?> TryOverrideAsync<TContext>(Feature feature, TContext optionsContext, CancellationToken cancellationToken) where TContext : IOptionsContext
+        public ValueTask<VariantOverride?> TryOverrideAsync<TContext>(Feature feature, TContext optionsContext, CancellationToken cancellationToken) where TContext : IOptionsContext
         {
-            if (feature.Name == _featureName)
-            {
-                return Task.FromResult<VariantOverride?>(new VariantOverride
+            VariantOverride? result = feature.Name == _featureName
+                ? new VariantOverride
                 {
                     Id = _variantId,
                     OverrideProviderName = nameof(TestOverride),
-                });
-            }
+                }
+                : null;
 
-            return Task.FromResult<VariantOverride?>(null);
+            return new ValueTask<VariantOverride?>(result);
         }
     }
 }

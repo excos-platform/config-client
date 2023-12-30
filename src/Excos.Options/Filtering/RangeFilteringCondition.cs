@@ -100,6 +100,15 @@ public class RangeFilteringCondition<F> : IFilteringCondition
                 return true;
             }
         }
+        else if (typeof(F) == typeof(DateTimeOffset))
+        {
+            if (typeof(T) == typeof(DateTime))
+            {
+                DateTimeOffset dt = Unsafe.As<T, DateTime>(ref value);
+                val = Unsafe.As<DateTimeOffset, F>(ref dt);
+                return true;
+            }
+        }
 
         val = default!;
         return false;

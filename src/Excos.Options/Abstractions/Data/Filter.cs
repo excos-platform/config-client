@@ -21,6 +21,7 @@ public class Filter
 
     /// <summary>
     /// Checks if the values satisfies the filter based on the conditions.
+    /// At least one condition must be satisfied.
     /// </summary>
     /// <param name="value">Value.</param>
     /// <typeparam name="T">Type of the value.</typeparam>

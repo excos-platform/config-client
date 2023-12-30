@@ -16,5 +16,5 @@ public interface IFeatureProvider
     /// <remarks>
     /// It's on the provider to handle caching of the features if needed.
     /// </remarks> 
-    Task<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken);
+    ValueTask<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken);
 }

@@ -9,7 +9,7 @@ namespace Excos.Options.Abstractions.Data;
 /// A range represents a spectrum of comparable values between a start and an end.
 /// </summary>
 /// <typeparam name="T">Type of values in the range.</typeparam>
-public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpanParsable<T>
+public readonly struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpanParsable<T>
 {
     /// <summary>
     /// Creates a new range from <paramref name="start"/> to <paramref name="end"/>.
@@ -39,7 +39,7 @@ public struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<T>, ISpan
     /// <summary>
     /// Checks if the value is contained within the range.
     /// </summary>
-    public bool Contains(T value)
+    public readonly bool Contains(T value)
     {
         if (Type.HasFlag(RangeType.IncludeStart))
         {

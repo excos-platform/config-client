@@ -58,14 +58,14 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
         foreach (var provider in _featureProviders)
         {
-            var features = await provider.GetFeaturesAsync(cancellationToken);
+            var features = await provider.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
 
             var applicableFeatures = features
                 .Where(e => e.Enabled)
                 .Where(e => filteringReceiver.Satisfies(e.Filters));
             foreach (var feature in applicableFeatures)
             {
-                var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken);
+                var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken).ConfigureAwait(false);
 
                 if (variantOverride != null)
                 {
@@ -134,7 +134,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     {
         foreach (var @override in _variantOverrides)
         {
-            var variantOverride = await @override.TryOverrideAsync(feature, optionsContext, cancellationToken);
+            var variantOverride = await @override.TryOverrideAsync(feature, optionsContext, cancellationToken).ConfigureAwait(false);
             if (variantOverride != null && feature.Variants.TryGetValue(variantOverride.Id, out var selectedVariant))
             {
                 return (selectedVariant, variantOverride);
