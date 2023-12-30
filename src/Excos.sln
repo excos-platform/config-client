@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Options", "Excos.Opti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Options.Tests", "Excos.Options.Tests\Excos.Options.Tests.csproj", "{DD9397D2-3132-44F2-AC28-BB300D943E83}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Benchmarks", "Excos.Benchmarks\Excos.Benchmarks.csproj", "{58B01ED8-F7D4-4792-BEB5-E51F782807E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{DD9397D2-3132-44F2-AC28-BB300D943E83}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD9397D2-3132-44F2-AC28-BB300D943E83}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD9397D2-3132-44F2-AC28-BB300D943E83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58B01ED8-F7D4-4792-BEB5-E51F782807E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58B01ED8-F7D4-4792-BEB5-E51F782807E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58B01ED8-F7D4-4792-BEB5-E51F782807E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58B01ED8-F7D4-4792-BEB5-E51F782807E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
