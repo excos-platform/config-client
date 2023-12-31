@@ -46,13 +46,13 @@ internal class ConfigureContextualOptions<TOptions> : IConfigureContextualOption
         if (PrivateObjectPool<ConfigureContextualOptions<TOptions>>.Instance.TryGet(out var instance) && instance != null)
         {
             instance._configurationSection = configurationSection;
+            instance.ConfigureOptions.Clear();
         }
         else
         {
             instance = new ConfigureContextualOptions<TOptions>(configurationSection);
         }
 
-        instance.ConfigureOptions.Clear();
         return instance;
     }
 

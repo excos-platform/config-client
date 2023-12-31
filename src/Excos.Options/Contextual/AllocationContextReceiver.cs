@@ -3,6 +3,7 @@
 
 using System.IO.Hashing;
 using System.Runtime.InteropServices;
+using Excos.Options.Utils;
 using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Contextual;
@@ -10,13 +11,13 @@ namespace Excos.Options.Contextual;
 /// <summary>
 /// Context receiver for determining allocation spot based on context.
 /// </summary>
-internal class AllocationContextReceiver : IOptionsContextReceiver
+internal class AllocationContextReceiver : IOptionsContextReceiver, IDisposable
 {
-    private readonly string _allocationUnit;
-    private readonly string _salt;
+    private string _allocationUnit;
+    private string _salt;
     private string _value = string.Empty;
 
-    public AllocationContextReceiver(string allocationUnit, string salt)
+    private AllocationContextReceiver(string allocationUnit, string salt)
     {
         _allocationUnit = allocationUnit;
         _salt = salt;
@@ -39,4 +40,25 @@ internal class AllocationContextReceiver : IOptionsContextReceiver
         var hash = XxHash32.HashToUInt32(MemoryMarshal.AsBytes(source.AsSpan()));
         return (double)hash / uint.MaxValue;
     }
+
+    public void Dispose() => Return(this);
+
+    public static AllocationContextReceiver Get(string allocationUnit, string salt)
+    {
+        if (PrivateObjectPool<AllocationContextReceiver>.Instance.TryGet(out var instance) && instance != null)
+        {
+            instance._allocationUnit = allocationUnit;
+            instance._salt = salt;
+            instance._value = string.Empty;
+        }
+        else
+        {
+            instance = new AllocationContextReceiver(allocationUnit, salt);
+        }
+
+        return instance;
+    }
+
+    public static void Return(AllocationContextReceiver instance) =>
+        PrivateObjectPool<AllocationContextReceiver>.Instance.Return(instance);
 }

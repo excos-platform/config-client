@@ -15,7 +15,7 @@ BenchmarkDotNet v0.13.11, Windows 11 (10.0.22621.2715/22H2/2022Update/SunValley2
 
 | Method               | Mean        | Error     | StdDev    | Gen0   | Gen1   | Allocated |
 |--------------------- |------------:|----------:|----------:|-------:|-------:|----------:|
-| BuildAndResolveExcos | 19,362.9 ns | 333.24 ns | 311.72 ns | 4.3945 | 0.9766 |   27954 B |
-| BuildAndResolveFM    |  5,952.6 ns | 114.63 ns | 127.41 ns | 2.8381 | 0.7019 |   17921 B |
-| GetExcosSettings     |  1,197.7 ns |  17.13 ns |  16.02 ns | 0.3071 |      - |    1936 B |
-| GetFMSetting         |    369.9 ns |   3.68 ns |   3.26 ns | 0.1578 |      - |     992 B |
+| BuildAndResolveExcos | 19,673.2 ns | 352.05 ns | 312.08 ns | 4.3945 | 0.9766 |   27954 B |
+| BuildAndResolveFM    |  6,090.5 ns | 118.09 ns | 157.65 ns | 2.8381 | 0.7019 |   17921 B |
+| GetExcosSettings     |  1,486.3 ns |  23.47 ns |  19.60 ns | 0.2346 |      - |    1480 B |
+| GetFMSetting         |    382.4 ns |   5.06 ns |   4.73 ns | 0.1578 |      - |     992 B |

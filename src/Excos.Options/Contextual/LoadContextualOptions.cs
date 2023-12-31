@@ -50,7 +50,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     {
         var configure = ConfigureContextualOptions<TOptions>.Get(_configurationSection);
 
-        var filteringReceiver = new FilteringContextReceiver();
+        using var filteringReceiver = FilteringContextReceiver.Get();
         context.PopulateReceiver(filteringReceiver);
         bool FeatureFilterPredicate(Feature f) => filteringReceiver.Satisfies(f.Filters);
         bool VariantFilterPredicate(Variant v) => filteringReceiver.Satisfies(v.Filters);
@@ -86,7 +86,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                 else
                 {
                     var allocationUnit = feature.AllocationUnit ?? _options.CurrentValue.DefaultAllocationUnit;
-                    var allocationReceiver = new AllocationContextReceiver(allocationUnit, feature.Salt);
+                    using var allocationReceiver = AllocationContextReceiver.Get(allocationUnit, feature.Salt);
                     context.PopulateReceiver(allocationReceiver);
                     var allocationSpot = allocationReceiver.GetIdentifierAllocationSpot();
                     using var allocationPredicate = AllocationPredicate.Get(allocationSpot);

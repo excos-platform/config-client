@@ -19,9 +19,9 @@ public class ContextReceiverTests
     public void Allocation_Receive_WithSameIdentifier_ReturnsTheSameAllocation(string value)
     {
         ContextWithIdentifier context1 = new() { Identifier = value };
-        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
+        using AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
         ContextWithIdentifier context2 = new() { Identifier = value };
-        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
+        using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
 
         var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
         var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
@@ -36,9 +36,9 @@ public class ContextReceiverTests
     public void Allocation_Receive_WithDifferentIdentifier_ReturnsDifferentAllocation()
     {
         ContextWithIdentifier context1 = new() { Identifier = "abc" };
-        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
+        using AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
         ContextWithIdentifier context2 = new() { Identifier = "def" };
-        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
+        using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
 
         var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
         var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
@@ -51,11 +51,11 @@ public class ContextReceiverTests
     {
         const string id = "abc";
         ContextWithIdentifier context1 = new() { Identifier = id };
-        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
+        using AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
         ContextWithIdentifier context2 = new() { UserId = id };
-        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
+        using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
         ContextWithIdentifier context3 = new() { SessionId = id };
-        AllocationContextReceiver receiver3 = PopulateAllocationReceiver(context3, nameof(context3.SessionId));
+        using AllocationContextReceiver receiver3 = PopulateAllocationReceiver(context3, nameof(context3.SessionId));
 
         var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
         var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
@@ -69,9 +69,9 @@ public class ContextReceiverTests
     public void Receive_WhenAskedAboutNonExistentProperty_ReturnsSameAllocationAsEmpty()
     {
         ContextWithIdentifier context1 = new() { Identifier = "x", UserId = "y", SessionId = "z"};
-        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, "AnonymousId");
+        using AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, "AnonymousId");
         ContextWithIdentifier context2 = new();
-        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
+        using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
 
         var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
         var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
@@ -81,7 +81,7 @@ public class ContextReceiverTests
 
     private static AllocationContextReceiver PopulateAllocationReceiver<TContext>(TContext context, string propertyName) where TContext : IOptionsContext
     {
-        AllocationContextReceiver receiver = new(propertyName, salt: string.Empty);
+        AllocationContextReceiver receiver = AllocationContextReceiver.Get(propertyName, salt: string.Empty);
         context.PopulateReceiver(receiver);
         return receiver;
     }
