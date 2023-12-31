@@ -362,6 +362,32 @@ public class OptionsBasedFeaturesTests
         Assert.Equal(nameof(TestOverride), metadata.OverrideProviderName);
     }
 
+    [Fact]
+    public async Task ExtensionsBuilder_SetsUpFeatureEasily()
+    {
+        var provider = BuildServiceProvider(o => o.BuildFeature("TestFeature")
+            .WithFilter(nameof(ContextWithIdentifier.Market)).Matches("US").Or().Matches("UK").SaveFilter()
+            .Rollout<TestOptions>(75, (options, _) => options.Label = "XX")
+            .Save()
+            .BuildFeature("TestExperiment")
+            .Configure(b => b.AllocationUnit = nameof(ContextWithIdentifier.SessionId))
+            .WithFilter(nameof(ContextWithIdentifier.AgeGroup)).InRange(new Range<int>(0, 5, RangeType.IncludeBoth)).SaveFilter()
+            .ABExperiment<TestOptions>((options, _) => options.Length = 5, (options, _) => options.Length = 10)
+            .Save());
+
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1, UserId = "test", SessionId = "testSession" }, default);
+
+        Assert.NotNull(options.Metadata);
+        Assert.Equal(2, options.Metadata.Features.Count);
+        Assert.Equal("TestFeature", options.Metadata.Features[0].FeatureName);
+        Assert.Equal("TestExperiment", options.Metadata.Features[1].FeatureName);
+        Assert.Equal("B", options.Metadata.Features[1].VariantId);
+
+        Assert.Equal("XX", options.Label);
+        Assert.Equal(10, options.Length);
+    }
+
     private class TestOptions
     {
         public int Length { get; set; }

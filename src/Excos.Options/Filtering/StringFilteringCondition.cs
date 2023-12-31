@@ -3,7 +3,7 @@
 
 using Excos.Options.Abstractions;
 
-namespace Excos.Options;
+namespace Excos.Options.Filtering;
 
 public class StringFilteringCondition : IFilteringCondition
 {
