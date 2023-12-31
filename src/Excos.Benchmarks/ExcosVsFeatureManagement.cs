@@ -7,6 +7,7 @@ using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Contextual;
 using Excos.Options.Providers;
+using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options.Contextual;
@@ -95,8 +96,18 @@ public class ExcosVsFeatureManagement
     }
 
     [Benchmark]
-    public async Task<string> GetExcosSettings()
+    public async Task<string> GetExcosSettingsPooled()
     {
+        PrivateObjectPool.EnablePooling = true;
+        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var options = await contextualOptions.GetAsync(new TestContext(), default);
+        return options.Setting;
+    }
+
+    [Benchmark]
+    public async Task<string> GetExcosSettingsNew()
+    {
+        PrivateObjectPool.EnablePooling = false;
         var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions>>();
         var options = await contextualOptions.GetAsync(new TestContext(), default);
         return options.Setting;
