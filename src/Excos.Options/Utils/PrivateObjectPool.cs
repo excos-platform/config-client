@@ -1,8 +1,6 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using System.Collections.Concurrent;
-
 namespace Excos.Options.Utils;
 
 public static class PrivateObjectPool
@@ -18,13 +16,13 @@ public sealed class PrivateObjectPool<T> where T : class
 {
     public static readonly PrivateObjectPool<T> Instance = new();
 
-    private readonly ConcurrentBag<T> _pool = new();
+    private readonly ThreadLocal<Stack<T>> _pool = new(() => new Stack<T>(8), trackAllValues: false);
 
     public bool TryGet(out T? instance)
     {
         if (PrivateObjectPool.EnablePooling)
         {
-            return _pool.TryTake(out instance);
+            return _pool.Value!.TryPop(out instance);
         }
 
         instance = null;
@@ -35,7 +33,7 @@ public sealed class PrivateObjectPool<T> where T : class
     {
         if (PrivateObjectPool.EnablePooling)
         {
-            _pool.Add(instance);
+            _pool.Value!.Push(instance);
         }
     }
 }
