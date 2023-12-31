@@ -29,6 +29,23 @@ public class ContextReceiverTests
         Assert.Equal(allocationSpot1, allocationSpot2);
     }
 
+    /// <summary>
+    /// Ensure there is difference between values.
+    /// </summary>
+    [Fact]
+    public void Allocation_Receive_WithDifferentIdentifier_ReturnsDifferentAllocation()
+    {
+        ContextWithIdentifier context1 = new() { Identifier = "abc" };
+        AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, nameof(context1.Identifier));
+        ContextWithIdentifier context2 = new() { Identifier = "def" };
+        AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
+
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
+
+        Assert.NotEqual(allocationSpot1, allocationSpot2);
+    }
+
     [Fact]
     public void Allocation_Receive_WithAnyIdProperty_ReturnsTheSameAllocation()
     {

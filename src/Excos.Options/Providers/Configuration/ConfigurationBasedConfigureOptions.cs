@@ -7,6 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Excos.Options.Providers.Configuration;
 
+/// <summary>
+/// Wrapper over <see cref="IConfiguration"/> that performs binding to options later on.
+/// </summary>
+/// <remarks>
+/// Instances of this class are not being pooled because they should be rather long lived (Options lifecycle).
+/// </remarks> 
 internal class ConfigurationBasedConfigureOptions : IConfigureOptions
 {
     private readonly IConfiguration _configuration;

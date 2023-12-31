@@ -13,9 +13,9 @@ BenchmarkDotNet v0.13.11, Windows 11 (10.0.22621.2715/22H2/2022Update/SunValley2
   DefaultJob : .NET 8.0.0 (8.0.23.53103), X64 RyuJIT AVX2
 ```
 
-| Method               | Mean         | Error        | StdDev       | Median       | Gen0   | Gen1   | Allocated |
-|--------------------- |-------------:|-------------:|-------------:|-------------:|-------:|-------:|----------:|
-| BuildAndResolveExcos | 28,111.09 ns | 1,989.788 ns | 5,866.935 ns | 24,148.72 ns | 4.4556 | 1.0986 |   27950 B |
-| BuildAndResolveFM    |  9,208.25 ns |   699.455 ns | 2,040.344 ns |  9,061.90 ns | 2.5787 | 0.6409 |   16225 B |
-| GetExcosSettings     |    966.71 ns |     9.294 ns |     7.761 ns |    963.99 ns | 0.3300 |      - |    2072 B |
-| GetFMSetting         |     86.92 ns |     0.673 ns |     0.597 ns |     86.95 ns | 0.0331 |      - |     208 B |
+| Method               | Mean         | Error      | StdDev     | Median       | Gen0   | Gen1   | Allocated |
+|--------------------- |-------------:|-----------:|-----------:|-------------:|-------:|-------:|----------:|
+| BuildAndResolveExcos | 20,059.73 ns | 393.568 ns | 511.750 ns | 19,982.28 ns | 4.3945 | 0.9766 |   27954 B |
+| BuildAndResolveFM    |  5,212.15 ns | 100.536 ns | 111.746 ns |  5,214.44 ns | 2.5635 | 0.6104 |   16225 B |
+| GetExcosSettings     |  1,036.08 ns |  19.383 ns |  44.923 ns |  1,019.20 ns | 0.2918 |      - |    1840 B |
+| GetFMSetting         |     73.78 ns |   1.096 ns |   0.972 ns |     73.85 ns | 0.0331 |      - |     208 B |

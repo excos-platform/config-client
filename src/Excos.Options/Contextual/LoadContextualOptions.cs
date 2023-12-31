@@ -3,6 +3,7 @@
 
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
+using Excos.Options.Utils;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
 
@@ -47,10 +48,12 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
     private async ValueTask<IConfigureContextualOptions<TOptions>> LoadExperimentAsync<TContext>(TContext context, CancellationToken cancellationToken) where TContext : IOptionsContext
     {
-        var configure = new ConfigureContextualOptions<TOptions>(_configurationSection);
+        var configure = ConfigureContextualOptions<TOptions>.Get(_configurationSection);
 
         var filteringReceiver = new FilteringContextReceiver();
         context.PopulateReceiver(filteringReceiver);
+        bool FeatureFilterPredicate(Feature f) => filteringReceiver.Satisfies(f.Filters);
+        bool VariantFilterPredicate(Variant v) => filteringReceiver.Satisfies(v.Filters);
 
         // only instantiate metadata if expected by options type
         var optionsMetadataPropertyName = OptionsMetadataPropertyName.Value;
@@ -61,8 +64,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
             var features = await provider.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
 
             var applicableFeatures = features
-                .Where(e => e.Enabled)
-                .Where(e => filteringReceiver.Satisfies(e.Filters));
+                .Where(static f => f.Enabled)
+                .Where(FeatureFilterPredicate);
             foreach (var feature in applicableFeatures)
             {
                 var variantOverride = await TryGetVariantOverrideAsync(feature, context, cancellationToken).ConfigureAwait(false);
@@ -86,12 +89,13 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                     var allocationReceiver = new AllocationContextReceiver(allocationUnit, feature.Salt);
                     context.PopulateReceiver(allocationReceiver);
                     var allocationSpot = allocationReceiver.GetIdentifierAllocationSpot();
+                    using var allocationPredicate = AllocationPredicate.Get(allocationSpot);
 
                     var matchingVariant = feature.Variants
-                        .Where(v => v.Allocation.Contains(allocationSpot))
-                        .Where(v => filteringReceiver.Satisfies(v.Filters))
-                        .OrderByDescending(v => v.Filters.Count) // the one with the most filters first
-                        .OrderBy(v => v.Priority, PriorityComparer.Instance) // the one with lowest priority first (if specified)
+                        .Where(allocationPredicate.Invoke)
+                        .Where(VariantFilterPredicate)
+                        .OrderByDescending(static v => v.Filters.Count) // the one with the most filters first
+                        .OrderBy(static v => v.Priority, PriorityComparer.Instance) // the one with lowest priority first (if specified)
                         .FirstOrDefault();
 
                     if (matchingVariant != null)
@@ -110,7 +114,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
         if (metadataCollection?.Features.Count > 0)
         {
-            configure.ConfigureOptions.Add(new ConfigureFeatureMetadata(metadataCollection, optionsMetadataPropertyName!));
+            configure.ConfigureOptions.Add(ConfigureFeatureMetadata.Get(metadataCollection, optionsMetadataPropertyName!));
         }
 
         return configure;
@@ -157,5 +161,29 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
             if (y == null) return -1;
             return x.Value.CompareTo(y.Value);
         }
+    }
+
+    private sealed class AllocationPredicate : IDisposable
+    {
+        private double _allocationSpot;
+        private AllocationPredicate(double allocationSpot) => _allocationSpot = allocationSpot;
+        public bool Invoke(Variant v) => v.Allocation.Contains(_allocationSpot);
+        public void Dispose() => Return(this);
+
+        public static AllocationPredicate Get(double allocationSpot)
+        {
+            if (PrivateObjectPool<AllocationPredicate>.Instance.TryGet(out var instance) && instance != null)
+            {
+                instance._allocationSpot = allocationSpot;
+            }
+            else
+            {
+                instance = new AllocationPredicate(allocationSpot);
+            }
+            
+            return instance;
+        }
+        public static void Return(AllocationPredicate instance) =>
+            PrivateObjectPool<AllocationPredicate>.Instance.Return(instance);
     }
 }
