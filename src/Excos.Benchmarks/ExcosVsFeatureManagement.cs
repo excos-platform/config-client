@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 [MemoryDiagnoser]
 public class ExcosVsFeatureManagement
@@ -57,7 +58,12 @@ public class ExcosVsFeatureManagement
                 "TestFeature": {
                     "EnabledFor": [
                         {
-                            "Name": "AlwaysOn"
+                            "Name": "Microsoft.Targeting",
+                            "Parameters": {
+                                "Audience": {
+                                    "DefaultRolloutPercentage": 100,
+                                }
+                            }
                         }
                     ]
                 }
@@ -97,10 +103,14 @@ public class ExcosVsFeatureManagement
     }
 
     [Benchmark]
-    public async Task<bool> GetFMSetting()
+    public async Task<string> GetFMSetting()
     {
         var featureManagement = _fmProvider.GetRequiredService<IFeatureManager>();
-        return await featureManagement.IsEnabledAsync("TestFeature");
+        var options = new TestOptions
+        {
+            Setting = await featureManagement.IsEnabledAsync("TestFeature", new TestContext()) ? "Test" : string.Empty,
+        };
+        return options.Setting;
     }
 
     private class TestOptions
@@ -121,7 +131,8 @@ public class ExcosVsFeatureManagement
 }
 
 [OptionsContext]
-internal partial class TestContext
+internal partial class TestContext : ITargetingContext
 {
     public string? UserId { get; set; }
+    public IEnumerable<string> Groups { get; set; } = Array.Empty<string>();
 }
