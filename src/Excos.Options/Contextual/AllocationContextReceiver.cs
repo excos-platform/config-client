@@ -11,7 +11,8 @@ namespace Excos.Options.Contextual;
 /// <summary>
 /// Context receiver for determining allocation spot based on context.
 /// </summary>
-internal class AllocationContextReceiver : IOptionsContextReceiver, IDisposable
+[PrivatePool]
+internal partial class AllocationContextReceiver : IOptionsContextReceiver, IDisposable
 {
     private string _allocationUnit;
     private string _salt;
@@ -43,22 +44,5 @@ internal class AllocationContextReceiver : IOptionsContextReceiver, IDisposable
 
     public void Dispose() => Return(this);
 
-    public static AllocationContextReceiver Get(string allocationUnit, string salt)
-    {
-        if (PrivateObjectPool<AllocationContextReceiver>.Instance.TryGet(out var instance) && instance != null)
-        {
-            instance._allocationUnit = allocationUnit;
-            instance._salt = salt;
-            instance._value = string.Empty;
-        }
-        else
-        {
-            instance = new AllocationContextReceiver(allocationUnit, salt);
-        }
-
-        return instance;
-    }
-
-    public static void Return(AllocationContextReceiver instance) =>
-        PrivateObjectPool<AllocationContextReceiver>.Instance.Return(instance);
+    private void Clear() => _value = string.Empty;
 }

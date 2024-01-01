@@ -7,7 +7,8 @@ using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Contextual;
 
-internal class ConfigureContextualOptions<TOptions> : IConfigureContextualOptions<TOptions>
+[PrivatePool]
+internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextualOptions<TOptions>
     where TOptions : class
 {
     private string _configurationSection;
@@ -37,25 +38,9 @@ internal class ConfigureContextualOptions<TOptions> : IConfigureContextualOption
             }
         }
 
-        ConfigureOptions.Clear();
+        Clear();
         Return(this);
     }
 
-    public static ConfigureContextualOptions<TOptions> Get(string configurationSection)
-    {
-        if (PrivateObjectPool<ConfigureContextualOptions<TOptions>>.Instance.TryGet(out var instance) && instance != null)
-        {
-            instance._configurationSection = configurationSection;
-            instance.ConfigureOptions.Clear();
-        }
-        else
-        {
-            instance = new ConfigureContextualOptions<TOptions>(configurationSection);
-        }
-
-        return instance;
-    }
-
-    public static void Return(ConfigureContextualOptions<TOptions> instance) =>
-        PrivateObjectPool<ConfigureContextualOptions<TOptions>>.Instance.Return(instance);
+    private void Clear() => ConfigureOptions.Clear();
 }

@@ -6,7 +6,8 @@ using Excos.Options.Utils;
 
 namespace Excos.Options.Contextual;
 
-internal class ConfigureFeatureMetadata : IPooledConfigureOptions
+[PrivatePool]
+internal partial class ConfigureFeatureMetadata : IPooledConfigureOptions
 {
     private FeatureMetadata? _metadata;
     private string _propertyName;
@@ -24,22 +25,4 @@ internal class ConfigureFeatureMetadata : IPooledConfigureOptions
     }
 
     public void ReturnToPool() => Return(this);
-
-    public static ConfigureFeatureMetadata Get(FeatureMetadata? metadata, string propertyName)
-    {
-        if (PrivateObjectPool<ConfigureFeatureMetadata>.Instance.TryGet(out var instance) && instance != null)
-        {
-            instance._metadata = metadata;
-            instance._propertyName = propertyName;
-        }
-        else
-        {
-            instance = new ConfigureFeatureMetadata(metadata, propertyName);
-        }
-
-        return instance;
-    }
-
-    public static void Return(ConfigureFeatureMetadata instance) =>
-        PrivateObjectPool<ConfigureFeatureMetadata>.Instance.Return(instance);
 }

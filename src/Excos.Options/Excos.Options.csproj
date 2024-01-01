@@ -7,9 +7,15 @@
     
     <!-- Do not warn about contextual being an experimental API -->
     <NoWarn>EXTEXP0017</NoWarn>
+
+    <EmitCompilerGeneratedFiles Condition="$(Configuration) != 'Release'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj"
+        OutputItemType="Analyzer"
+        SetTargetFramework="TargetFramework=netstandard2.0"
+        ReferenceOutputAssembly="false" />
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.0.0-rtm.23558.11,8.0.0)" />

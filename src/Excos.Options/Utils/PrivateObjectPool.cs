@@ -37,3 +37,8 @@ public sealed class PrivateObjectPool<T> where T : class
         }
     }
 }
+
+[AttributeUsage(AttributeTargets.Class)]
+public class PrivatePoolAttribute : Attribute
+{
+}
