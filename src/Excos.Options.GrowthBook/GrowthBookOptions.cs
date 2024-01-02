@@ -12,7 +12,7 @@ public class GrowthBookOptions
     [Required]
     public string ClientKey { get; set; } = string.Empty;
 
-    public string? DecryptionKey { get; set; }
+    //public string? DecryptionKey { get; set; } // Only available in paid version
 
     public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(1);
 

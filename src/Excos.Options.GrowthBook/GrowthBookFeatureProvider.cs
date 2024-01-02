@@ -64,7 +64,10 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync();
-            var features = JsonSerializer.Deserialize<Models.GrowthBookApiResponse>(content);
+            var features = JsonSerializer.Deserialize<Models.GrowthBookApiResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            });
 
             // update the secondary cache to not disrupt any current consumer of the primary cache
             _secondaryCachedFeatures.Clear();
@@ -94,28 +97,42 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
 
         foreach (var gbFeature in features.Features)
         {
-            var deafaultValue = gbFeature.Value.DefaultValue;
+            var defaultValue = gbFeature.Value.DefaultValue; // TODO: this should be used for a configuration provider as a base value for the options
+            var ruleIdx = 0;
             foreach (var rule in gbFeature.Value.Rules)
             {
-                var key = !string.IsNullOrEmpty(rule.Key) ? rule.Key : gbFeature.Key;
                 var namespaceId = rule.Namespace.ValueKind == JsonValueKind.Array ? rule.Namespace[0].GetString() : null;
                 var namespaceRange = namespaceId is not null ? new Range<double>(rule.Namespace[1].GetDouble(), rule.Namespace[2].GetDouble(), RangeType.IncludeBoth) : (Range<double>?)null;
                 var feature = new Feature
                 {
-                    Name = key,
+                    Name = rule.Key ?? gbFeature.Key,
                     ProviderName = ProviderName,
                     AllocationUnit = rule.HashAttribute,
-                    Salt = rule.Seed ?? key,
+                    Salt = rule.Seed ?? rule.Key ?? gbFeature.Key,
                 };
-                // if force is not null then there's a single variation
-                // else
-                var variants = rule.Meta.Select((v,i) => new Variant
+
+                if (rule.Force.ValueKind != JsonValueKind.Undefined)
                 {
-                    Id = v.Key ?? ('A' + i - 1).ToString(),
-                    Allocation = Allocation.Percentage(0), //rule.Ranges[i], //TODO
-                    Configuration = null!, //TODO based on rule.Variations
-                });
+                    feature.Variants.Add(new Variant
+                    {
+                        Id = $"Rule_{ruleIdx}",
+                        Allocation = Allocation.Percentage(rule.Coverage),
+                        Configuration = null!, //TODO based on rule.Force
+                    });
+                }
+                else
+                {
+                    var variants = rule.Meta?.Select((v,i) => new Variant
+                    {
+                        Id = v.Key ?? i.ToString(),
+                        Allocation = Allocation.Percentage(0), //rule.Ranges[i], //TODO
+                        Configuration = null!, //TODO based on rule.Variations
+                    });
+                    
+                }
                 // parse filters
+
+                ruleIdx++;
             }
         }
     }
