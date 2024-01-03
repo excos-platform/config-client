@@ -9,6 +9,7 @@ namespace Excos.Options.GrowthBook.Tests
     {
         public static IEnumerable<object[]> EvalConditions => JsonSerializer.Deserialize<JsonDocument>(CasesJson)!.RootElement.GetProperty("evalCondition").EnumerateArray().Select(x => new object[] { x[0].GetString()!, x[1], x[2], x[3].GetBoolean() });
         public static IEnumerable<object[]> Hash => JsonSerializer.Deserialize<JsonDocument>(CasesJson)!.RootElement.GetProperty("hash").EnumerateArray().Select(x => new object[] { x[0].GetString()!, x[1].GetString()!, x[2].GetInt32(), x[3].ValueKind == JsonValueKind.Null ? null! : (double?)x[3].GetDouble() });
+        public static IEnumerable<object[]> VersionCompareEQ => JsonSerializer.Deserialize<JsonDocument>(CasesJson)!.RootElement.GetProperty("versionCompare").GetProperty("eq").EnumerateArray().Select(x => new object[] { x[0].GetString()!, x[1].GetString()!, x[2].GetBoolean() });
 
         /// <summary>
         /// https://github.com/growthbook/growthbook/blob/main/packages/sdk-js/test/cases.json

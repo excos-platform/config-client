@@ -2,8 +2,10 @@
 // Licensed under the Apache License, Version 2.0
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
@@ -163,27 +165,27 @@ internal static class FilterParser
         {
             return new RegexFilteringCondition(property.Value.GetString()!);
         }
-        else if (property.Name == "$vgt" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$vgt" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r > 0, version);
         }
-        else if (property.Name == "$vgte" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$vgte" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r >= 0, version);
         }
-        else if (property.Name == "$vlt" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$vlt" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r < 0, version); ;
         }
-        else if (property.Name == "$vlte" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$vlte" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r <= 0, version);
         }
-        else if (property.Name == "$veq" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$veq" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r == 0, version);
         }
-        else if (property.Name == "$vne" && Version.TryParse(property.Value.GetString()!, out version))
+        else if (property.Name == "$vne" && ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version))
         {
             return new ComparisonVersionStringFilter(r => r != 0, version);
         }
@@ -363,13 +365,15 @@ internal class ComparisonVersionStringFilter : IFilteringCondition
 
     public bool IsSatisfiedBy<T>(T value)
     {
-        if (Version.TryParse((value?.ToString() ?? string.Empty).AsSpan().TrimStart('v'), out var version))
+        if (TryParse(value, out var version))
         {
             return _comparisonResult(version.CompareTo(_value));
         }
 
         return false;
     }
+
+    public static bool TryParse<T>(T input, [NotNullWhen(true)] out Version? version) => Version.TryParse(Regex.Replace(input?.ToString() ?? string.Empty, "(^v|\\+.*$)", "").Replace('-', '.'), out version);
 }
 
 internal class ComparisonNumberFilter : IFilteringCondition

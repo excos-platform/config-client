@@ -192,6 +192,15 @@ public class UnitTest1
         Assert.Equal(result, hash == -1 ? null : hash);
     }
 
+    [Theory]
+    [MemberData(nameof(Cases.VersionCompareEQ), MemberType = typeof(Cases))]
+    public void VersionCompareEQ_Test(string left, string right, bool match)
+    {
+        Assert.True(ComparisonVersionStringFilter.TryParse(left, out var version));
+        var algorithm = new ComparisonVersionStringFilter(i => i == 0, version);
+        Assert.Equal(match, algorithm.IsSatisfiedBy(right));
+    }
+
     private class MockLogger<T> : ILogger<T>
     {
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
