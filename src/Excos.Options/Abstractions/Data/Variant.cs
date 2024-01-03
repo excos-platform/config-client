@@ -50,4 +50,9 @@ public class Variant
     /// Hashing algorithm used for variant allocation calculations.
     /// </summary>
     public IAllocationHash AllocationHash { get; set; } = XxHashAllocation.Instance;
+
+    /// <summary>
+    /// Overridable salt used for variant allocation calculations.
+    /// </summary>
+    public string? AllocationSalt { get; set; }
 }

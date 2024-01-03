@@ -154,7 +154,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
             var localAllocationSpot = allocationSpot;
             if (variant.AllocationUnit != null)
             {
-                localAllocationSpot = CalculateAllocationSpot(context, variant.AllocationUnit, feature.Salt, variant.AllocationHash);
+                localAllocationSpot = CalculateAllocationSpot(context, variant.AllocationUnit, variant.AllocationSalt ?? feature.Salt, variant.AllocationHash);
             }
 
             if (variant.Allocation.Contains(localAllocationSpot))

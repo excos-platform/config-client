@@ -16,7 +16,7 @@ namespace Excos.Options.GrowthBook.Tests;
 
 public class UnitTest1
 {
-    private const string Payload = 
+    private const string Payload =
     """
     {
         "status": 200,
@@ -128,6 +128,41 @@ public class UnitTest1
                         "hashAttribute": "id"
                     }
                 ]
+            },
+            "filtered": {
+                "defaultValue": {},
+                "rules": [
+                    {
+                        "condition": {
+                            "id": {
+                                "$exists": true
+                            },
+                            "browser": {
+                                "$ne": "1",
+                                "$eq": "3"
+                            },
+                            "deviceId": {
+                                "$gt": "5"
+                            },
+                            "company": {
+                                "$regex": "a.*c"
+                            },
+                            "country": {
+                                "$exists": false
+                            },
+                            "Tags": {
+                                "$size": 0,
+                                "$elemMatch": {
+                                    "$eq": "A"
+                                }
+                            },
+                            "version": {
+                                "$veq": "1.2.3"
+                            }
+                        },
+                        "force": {}
+                    }
+                ]
             }
         },
         "dateUpdated": "2024-01-02T21:22:10.743Z"
@@ -135,7 +170,7 @@ public class UnitTest1
     """;
 
     [Fact]
-    public void Test1()
+    public async Task Test1()
     {
         GrowthBookFeatureProvider provider = new(
             new OptionsMonitor<GrowthBookOptions>(new GrowthBookOptions
@@ -143,6 +178,8 @@ public class UnitTest1
             }),
             new MockHttpClientFactory(new MockHandler(Payload)),
             new MockLogger<GrowthBookFeatureProvider>());
+
+        var features = await provider.GetFeaturesAsync(default);
     }
 
     private class MockLogger<T> : ILogger<T>

@@ -62,11 +62,22 @@ public class FeatureRule
     public string HashAttribute { get; set; } = "id";
 
     /// <summary>
+    /// Version of the growthbook hashing algorithm to use.
+    /// </summary>
+    public int HashVersion { get; set; } = 2;
+
+    /// <summary>
     /// Meta info about the experiment variations.
     /// </summary>
     public IList<VariationMeta>? Meta { get; set; }
 
+    /// <summary>
+    /// Optional seed for the hashing algorithm.
+    /// </summary>
     public string? Seed { get; set; }
 
+    /// <summary>
+    /// Metadata phase (currently not used).
+    /// </summary>
     public string? Phase { get; set; }
 }
