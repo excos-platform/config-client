@@ -3,9 +3,214 @@
 
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Excos.Options.Abstractions;
+using Excos.Options.Abstractions.Data;
+using Excos.Options.Filtering;
 
 namespace Excos.Options.GrowthBook;
+
+internal static class FilterParser
+{
+    public static Dictionary<string, IFilteringCondition> ParseFilters(JsonElement conditions)
+    {
+        var filters = new Dictionary<string, IFilteringCondition>();
+        if (conditions.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var condition in conditions.EnumerateObject())
+            {
+                var key = condition.Name;
+                var value = condition.Value;
+                filters.Add(key, ParseCondition(value));
+            }
+        }
+
+        return filters;
+    }
+
+    private static IFilteringCondition ParseCondition(JsonElement condition)
+    {
+        if (condition.ValueKind == JsonValueKind.Object)
+        {
+            var properties = condition.EnumerateObject().ToList();
+            if (properties.Count == 1)
+            {
+                return ParseConditionOperator(properties[0]);
+            }
+            else
+            {
+                return new AndFilter(properties.Select(ParseConditionOperator));
+            }
+        }
+        else if (condition.ValueKind == JsonValueKind.Number)
+        {
+            return new ComparisonNumberFilter(r => r == 0, condition.GetDouble());
+        }
+        else if (condition.ValueKind == JsonValueKind.String)
+        {
+            return new ComparisonStringFilter(r => r == 0, condition.GetString()!);
+        }
+        else if (condition.ValueKind == JsonValueKind.Array)
+        {
+            var values = condition.EnumerateArray().Select(v => v.GetString()!).ToList();
+            return new InFilter(values);
+        }
+        else if (condition.ValueKind == JsonValueKind.True)
+        {
+            return new ComparisonBoolFilter(r => r == 0, true);
+        }
+        else if (condition.ValueKind == JsonValueKind.False)
+        {
+            return new ComparisonBoolFilter(r => r == 0, false);
+        }
+
+        return NeverFilteringCondition.Instance;
+    }
+
+    private static IFilteringCondition ParseConditionOperator(JsonProperty property)
+    {
+        Version? version;
+        if (property.Name == "$exists")
+        {
+            if (property.Value.ValueKind == JsonValueKind.False)
+            {
+                return new NotFilter(new ExistsFilter());
+            }
+            else if (property.Value.ValueKind == JsonValueKind.True)
+            {
+                return new ExistsFilter();
+            }
+        }
+        else if (property.Name == "$not")
+        {
+            return new NotFilter(ParseCondition(property.Value));
+        }
+        else if (property.Name == "$and")
+        {
+            return new AndFilter(property.Value.EnumerateArray().Select(ParseCondition));
+        }
+        else if (property.Name == "$or")
+        {
+            return new OrFilter(property.Value.EnumerateArray().Select(ParseCondition));
+        }
+        else if (property.Name == "$nor")
+        {
+            return new NotFilter(new OrFilter(property.Value.EnumerateArray().Select(ParseCondition)));
+        }
+        else if (property.Name == "$in")
+        {
+            return new InFilter(property.Value.EnumerateArray().Select(v => v.GetString()!));
+        }
+        else if (property.Name == "$nin")
+        {
+            return new NotFilter(new InFilter(property.Value.EnumerateArray().Select(v => v.GetString()!)));
+        }
+        else if (property.Name == "$all")
+        {
+            return new AllFilter(property.Value.EnumerateArray().Select(ParseCondition));
+        }
+        else if (property.Name == "$elemMatch")
+        {
+            return new ElemMatchFilter(ParseCondition(property.Value));
+        }
+        else if (property.Name == "$size")
+        {
+            return new SizeFilter(property.Value.GetInt32());
+        }
+        else if (property.Name == "$gt")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r > 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r > 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$gte")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r >= 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r >= 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$lt")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r < 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r < 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$lte")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r <= 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r <= 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$eq")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r == 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r == 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$ne")
+        {
+            if (property.Value.ValueKind == JsonValueKind.Number)
+                return new ComparisonNumberFilter(r => r != 0, property.Value.GetDouble());
+            else if (property.Value.ValueKind == JsonValueKind.String)
+                return new ComparisonStringFilter(r => r != 0, property.Value.GetString()!);
+        }
+        else if (property.Name == "$regex")
+        {
+            return new RegexFilteringCondition(property.Value.GetString()!);
+        }
+        else if (property.Name == "$vgt" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r > 0, version);
+        }
+        else if (property.Name == "$vgte" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r >= 0, version);
+        }
+        else if (property.Name == "$vlt" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r < 0, version); ;
+        }
+        else if (property.Name == "$vlte" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r <= 0, version);
+        }
+        else if (property.Name == "$veq" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r == 0, version);
+        }
+        else if (property.Name == "$vne" && Version.TryParse(property.Value.GetString()!, out version))
+        {
+            return new ComparisonVersionStringFilter(r => r != 0, version);
+        }
+
+        return NeverFilteringCondition.Instance;
+    }
+}
+
+internal class NamespaceInclusiveFilter : IFilteringCondition
+{
+    private readonly string _namespaceId;
+    private readonly Range<double> _range;
+    private readonly IFilteringCondition? _innerCondition;
+
+    public NamespaceInclusiveFilter(string namespaceId, Range<double> range, IFilteringCondition? innerCondition)
+    {
+        _namespaceId = namespaceId;
+        _range = range;
+        _innerCondition = innerCondition;
+    }
+
+    public bool IsSatisfiedBy<T>(T value)
+    {
+        var n = GrowthBookHash.V1.GetAllocationSpot($"__{_namespaceId}", value?.ToString() ?? string.Empty);
+        return _range.Contains(n) && (_innerCondition?.IsSatisfiedBy(value) ?? true);
+    }
+}
 
 internal class OrFilter : IFilteringCondition
 {
