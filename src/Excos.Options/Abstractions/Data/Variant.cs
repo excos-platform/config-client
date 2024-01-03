@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using Excos.Options.Utils;
+
 namespace Excos.Options.Abstractions.Data;
 
 /// <summary>
@@ -37,4 +39,15 @@ public class Variant
     /// If priority is not specified, the first variant with the highest number of filtered properties will be chosen.
     /// </summary>
     public int? Priority { get; set; }
+
+    /// <summary>
+    /// Name of the property in context which should be used for allocation calculation for this variant.
+    /// Overridable for compatibility with external providers. Ideally you should use the same allocation unit for all variants on the feature level.
+    /// </summary>
+    public string? AllocationUnit { get; set; }
+
+    /// <summary>
+    /// Hashing algorithm used for variant allocation calculations.
+    /// </summary>
+    public IAllocationHash AllocationHash { get; set; } = XxHashAllocation.Instance;
 }

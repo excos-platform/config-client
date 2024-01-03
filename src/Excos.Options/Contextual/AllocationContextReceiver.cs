@@ -3,6 +3,7 @@
 
 using System.IO.Hashing;
 using System.Runtime.InteropServices;
+using Excos.Options.Abstractions;
 using Excos.Options.Utils;
 using Microsoft.Extensions.Options.Contextual;
 
@@ -35,11 +36,9 @@ internal partial class AllocationContextReceiver : IOptionsContextReceiver, IDis
     /// <summary>
     /// Compute an allocation spot (floating point value between 0 and 1) for the identifier from context.
     /// </summary>
-    public double GetIdentifierAllocationSpot()
+    public double GetIdentifierAllocationSpot(IAllocationHash hash)
     {
-        var source = $"{_salt}_{_value}";
-        var hash = XxHash32.HashToUInt32(MemoryMarshal.AsBytes(source.AsSpan()));
-        return (double)hash / uint.MaxValue;
+        return hash.GetAllocationSpot(_salt, _value);
     }
 
     public void Dispose() => Return(this);

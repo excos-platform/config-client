@@ -3,23 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Options", "Excos.Options\Excos.Options.csproj", "{0AE22954-A3CB-4D17-BDE2-D7125414CFAA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.Options", "Excos.Options\Excos.Options.csproj", "{0AE22954-A3CB-4D17-BDE2-D7125414CFAA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Options.Tests", "Excos.Options.Tests\Excos.Options.Tests.csproj", "{DD9397D2-3132-44F2-AC28-BB300D943E83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.Options.Tests", "Excos.Options.Tests\Excos.Options.Tests.csproj", "{DD9397D2-3132-44F2-AC28-BB300D943E83}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Benchmarks", "Excos.Benchmarks\Excos.Benchmarks.csproj", "{58B01ED8-F7D4-4792-BEB5-E51F782807E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.Benchmarks", "Excos.Benchmarks\Excos.Benchmarks.csproj", "{58B01ED8-F7D4-4792-BEB5-E51F782807E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.SourceGen", "Excos.SourceGen\Excos.SourceGen.csproj", "{F3852706-E13F-4A2B-A90C-921139D0DEB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.SourceGen", "Excos.SourceGen\Excos.SourceGen.csproj", "{F3852706-E13F-4A2B-A90C-921139D0DEB8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excos.Options.GrowthBook.Tests", "Excos.Options.GrowthBook.Tests\Excos.Options.GrowthBook.Tests.csproj", "{DFF17BAA-57CD-471F-9B6F-29E27F2BA921}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.Options.GrowthBook.Tests", "Excos.Options.GrowthBook.Tests\Excos.Options.GrowthBook.Tests.csproj", "{DFF17BAA-57CD-471F-9B6F-29E27F2BA921}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excos.Options.GrowthBook", "Excos.Options.GrowthBook\Excos.Options.GrowthBook.csproj", "{D1E6EDCA-3CC9-4F6B-9958-A8E153193222}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{0AE22954-A3CB-4D17-BDE2-D7125414CFAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -42,5 +41,12 @@ Global
 		{DFF17BAA-57CD-471F-9B6F-29E27F2BA921}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFF17BAA-57CD-471F-9B6F-29E27F2BA921}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DFF17BAA-57CD-471F-9B6F-29E27F2BA921}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1E6EDCA-3CC9-4F6B-9958-A8E153193222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1E6EDCA-3CC9-4F6B-9958-A8E153193222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1E6EDCA-3CC9-4F6B-9958-A8E153193222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1E6EDCA-3CC9-4F6B-9958-A8E153193222}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using Excos.Options.Utils;
+
 namespace Excos.Options.Abstractions.Data;
 
 /// <summary>
@@ -39,6 +41,11 @@ public class Feature
     /// If not set, the value <see cref="ExcosOptions.DefaultAllocationUnit"/> is used. 
     /// </summary>
     public string? AllocationUnit { get; set; }
+
+    /// <summary>
+    /// Hashing algorithm used for variant allocation calculations.
+    /// </summary>
+    public IAllocationHash AllocationHash { get; set; } = XxHashAllocation.Instance;
 
     /// <summary>
     /// Salt used for variant allocation calculations.

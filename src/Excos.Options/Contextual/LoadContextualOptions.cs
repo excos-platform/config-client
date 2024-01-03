@@ -89,11 +89,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
                 }
                 else
                 {
-                    var allocationUnit = feature.AllocationUnit ?? _options.CurrentValue.DefaultAllocationUnit;
-                    using var allocationReceiver = AllocationContextReceiver.Get(allocationUnit, feature.Salt);
-                    context.PopulateReceiver(allocationReceiver);
-                    var allocationSpot = allocationReceiver.GetIdentifierAllocationSpot();
-                    Variant? matchingVariant = TryFindMatchingVariant(filteringReceiver, feature, allocationSpot);
+                    double allocationSpot = CalculateAllocationSpot(context, feature.AllocationUnit, feature.Salt, feature.AllocationHash);
+                    Variant? matchingVariant = TryFindMatchingVariant(filteringReceiver, context, feature, allocationSpot);
 
                     if (matchingVariant != null)
                     {
@@ -117,6 +114,16 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         return configure;
     }
 
+    private double CalculateAllocationSpot<TContext>(TContext context, string? allocationUnit, string salt, IAllocationHash allocationHash)
+        where TContext : IOptionsContext
+    {
+        allocationUnit ??= _options.CurrentValue.DefaultAllocationUnit;
+        using var allocationReceiver = AllocationContextReceiver.Get(allocationUnit, salt);
+        context.PopulateReceiver(allocationReceiver);
+        var allocationSpot = allocationReceiver.GetIdentifierAllocationSpot(allocationHash);
+        return allocationSpot;
+    }
+
     private static string? TryGetMetadataPropertyName()
     {
         foreach (var property in typeof(TOptions).GetProperties())
@@ -130,7 +137,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         return null;
     }
 
-    private static Variant? TryFindMatchingVariant(FilteringContextReceiver filteringReceiver, Feature feature, double allocationSpot)
+    private Variant? TryFindMatchingVariant<TContext>(FilteringContextReceiver filteringReceiver, TContext context, Feature feature, double allocationSpot)
+         where TContext : IOptionsContext
     {
         var variants = new List<Variant>(feature.Variants);
         variants.Sort(FilterCountComparer.Instance); // the one with the most filters first
@@ -138,7 +146,18 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
         foreach (var variant in variants)
         {
-            if (variant.Allocation.Contains(allocationSpot) && filteringReceiver.Satisfies(variant.Filters))
+            if (!filteringReceiver.Satisfies(variant.Filters))
+            {
+                continue;
+            }
+
+            var localAllocationSpot = allocationSpot;
+            if (variant.AllocationUnit != null)
+            {
+                localAllocationSpot = CalculateAllocationSpot(context, variant.AllocationUnit, feature.Salt, variant.AllocationHash);
+            }
+
+            if (variant.Allocation.Contains(localAllocationSpot))
             {
                 return variant;
             }

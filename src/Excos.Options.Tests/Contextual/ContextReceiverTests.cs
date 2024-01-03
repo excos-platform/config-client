@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 
 using Excos.Options.Contextual;
+using Excos.Options.Utils;
 using Microsoft.Extensions.Options.Contextual;
 using Xunit;
 
@@ -23,8 +24,8 @@ public class ContextReceiverTests
         ContextWithIdentifier context2 = new() { Identifier = value };
         using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
 
         Assert.Equal(allocationSpot1, allocationSpot2);
     }
@@ -40,8 +41,8 @@ public class ContextReceiverTests
         ContextWithIdentifier context2 = new() { Identifier = "def" };
         using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.Identifier));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
 
         Assert.NotEqual(allocationSpot1, allocationSpot2);
     }
@@ -57,9 +58,9 @@ public class ContextReceiverTests
         ContextWithIdentifier context3 = new() { SessionId = id };
         using AllocationContextReceiver receiver3 = PopulateAllocationReceiver(context3, nameof(context3.SessionId));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
-        var allocationSpot3 = receiver3.GetIdentifierAllocationSpot();
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
+        var allocationSpot3 = receiver3.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
 
         Assert.Equal(allocationSpot1, allocationSpot2);
         Assert.Equal(allocationSpot1, allocationSpot3);
@@ -73,8 +74,8 @@ public class ContextReceiverTests
         ContextWithIdentifier context2 = new();
         using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));
 
-        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot();
-        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot();
+        var allocationSpot1 = receiver1.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
+        var allocationSpot2 = receiver2.GetIdentifierAllocationSpot(XxHashAllocation.Instance);
 
         Assert.Equal(allocationSpot1, allocationSpot2);
     }

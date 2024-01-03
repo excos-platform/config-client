@@ -88,7 +88,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
         }
     }
 
-    private IEnumerable<Feature> ConvertFeaturesToExcos(Models.GrowthBookApiResponse? features)
+    private static IEnumerable<Feature> ConvertFeaturesToExcos(Models.GrowthBookApiResponse? features)
     {
         if (features?.Features is null)
         {
