@@ -27,7 +27,7 @@ internal class GrowthBookHash : IAllocationHash
         else if (_version == 2)
         {
             uint n = FNV32A(FNV32A(salt + identifier).ToString());
-            return (n % 10000) / 10000;
+            return (n % 10000) / 10000.0;
         }
 
         return -1; // no allocation match

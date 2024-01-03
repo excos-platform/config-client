@@ -175,6 +175,23 @@ public class UnitTest1
         var features = await provider.GetFeaturesAsync(default);
     }
 
+    // These tests seem to be using a different format to what the API returns...
+    //[Theory]
+    //[MemberData(nameof(Cases.EvalConditions), MemberType = typeof(Cases))]
+    //public void EvalConditions_Test(string name, JsonElement condition, JsonElement attributes, bool expected)
+    //{
+    //    var filter = FilterParser.ParseFilters(condition);
+    //}
+
+    [Theory]
+    [MemberData(nameof(Cases.Hash), MemberType = typeof(Cases))]
+    public void Hash_Test(string seed, string identifier, int version, double? result)
+    {
+        var algorithm = new GrowthBookHash(version);
+        var hash = algorithm.GetAllocationSpot(seed, identifier);
+        Assert.Equal(result, hash == -1 ? null : hash);
+    }
+
     private class MockLogger<T> : ILogger<T>
     {
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
