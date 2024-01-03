@@ -69,7 +69,7 @@ public class ContextReceiverTests
     [Fact]
     public void Receive_WhenAskedAboutNonExistentProperty_ReturnsSameAllocationAsEmpty()
     {
-        ContextWithIdentifier context1 = new() { Identifier = "x", UserId = "y", SessionId = "z"};
+        ContextWithIdentifier context1 = new() { Identifier = "x", UserId = "y", SessionId = "z" };
         using AllocationContextReceiver receiver1 = PopulateAllocationReceiver(context1, "AnonymousId");
         ContextWithIdentifier context2 = new();
         using AllocationContextReceiver receiver2 = PopulateAllocationReceiver(context2, nameof(context2.UserId));

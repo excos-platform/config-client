@@ -28,16 +28,16 @@ public sealed class OptionsFeatureBuilder
         };
     }
 
-    public OptionsBuilder<FeatureCollection> Save() => 
+    public OptionsBuilder<FeatureCollection> Save() =>
         _optionsBuilder.Configure(features => features.Add(Feature));
 }
 
 public sealed class OptionsFeatureFilterBuilder
 {
     internal OptionsFeatureBuilder FeatureBuilder { get; }
-    
+
     internal Filter Filter { get; }
-    
+
     internal OptionsFeatureFilterBuilder(OptionsFeatureBuilder featureBuilder, string propertyName)
     {
         FeatureBuilder = featureBuilder;

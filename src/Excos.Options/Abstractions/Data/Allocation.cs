@@ -35,5 +35,5 @@ public readonly struct Allocation
         }
 
         return new Allocation(new Range<double>(0, percentage / 100, RangeType.IncludeBoth));
-    } 
+    }
 }

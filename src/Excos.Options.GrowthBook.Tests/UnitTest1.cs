@@ -1,13 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Excos.Options.Abstractions;
-using Excos.Options.Abstractions.Data;
-using Excos.Options.GrowthBook;
+// Copyright (c) Marian Dziubiak and Contributors.
+// Licensed under the Apache License, Version 2.0
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -184,9 +177,9 @@ public class UnitTest1
 
     private class MockLogger<T> : ILogger<T>
     {
-        public void Log<TState> (Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState,Exception?,string> formatter) {}
-        public bool IsEnabled (Microsoft.Extensions.Logging.LogLevel logLevel) => true;
-        public IDisposable? BeginScope<TState>(TState state) => null;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
     }
 
     private class OptionsMonitor<T> : IOptionsMonitor<T>
@@ -195,14 +188,14 @@ public class UnitTest1
         public OptionsMonitor(T value) => _value = value;
         public T CurrentValue => _value;
         public T Get(string? name) => _value;
-        public IDisposable? OnChange(Action<T,string?> listener) => null;
+        public IDisposable? OnChange(Action<T, string?> listener) => null;
     }
 
     private class MockHttpClientFactory : IHttpClientFactory
     {
         private readonly DelegatingHandler _handler;
         public MockHttpClientFactory(DelegatingHandler handler) => _handler = handler;
-        public HttpClient CreateClient (string name)
+        public HttpClient CreateClient(string name)
         {
             return new HttpClient(_handler);
         }

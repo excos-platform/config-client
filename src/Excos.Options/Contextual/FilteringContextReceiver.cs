@@ -65,7 +65,7 @@ internal sealed partial class FilteringClosure<T> : FilteringClosure
     private T _value;
 
     private FilteringClosure(T value) => _value = value;
-    
+
     public override void Dispose() => Return(this);
     public override bool Invoke(Filter filter) => filter.IsSatisfiedBy(_value);
 }

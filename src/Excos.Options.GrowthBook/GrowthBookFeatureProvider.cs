@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) Marian Dziubiak and Contributors.
+// Licensed under the Apache License, Version 2.0
+
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 
 namespace Excos.Options.GrowthBook;
 
@@ -24,7 +19,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
     private readonly IOptionsMonitor<GrowthBookOptions> _options;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<GrowthBookFeatureProvider> _logger;
-    
+
     private List<Feature> _cachedFeatures = new();
     private List<Feature> _secondaryCachedFeatures = new();
     private DateTimeOffset? _cacheExpiration;
@@ -79,7 +74,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
             _secondaryCachedFeatures.AddRange(ConvertFeaturesToExcos(features));
             // then swap them
             _secondaryCachedFeatures = Interlocked.Exchange(ref _cachedFeatures, _secondaryCachedFeatures);
-            
+
             _cacheExpiration = DateTimeOffset.UtcNow + options.CacheDuration;
         }
         catch (Exception ex)
