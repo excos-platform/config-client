@@ -12,17 +12,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj"
-        OutputItemType="Analyzer"
-        SetTargetFramework="TargetFramework=netstandard2.0"
-        ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" ReferenceOutputAssembly="false" />
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.0.0-rtm.23558.11,8.0.0)" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).Tests, PublicKey=$(StrongNamePublicKey)" />
   </ItemGroup>
 
 </Project>
