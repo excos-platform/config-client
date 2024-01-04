@@ -172,7 +172,12 @@ public class UnitTest1
             new MockHttpClientFactory(new MockHandler(Payload)),
             new MockLogger<GrowthBookFeatureProvider>());
 
-        var features = await provider.GetFeaturesAsync(default);
+        var features = (await provider.GetFeaturesAsync(default)).ToList();
+
+        Assert.Equal(3, features.Count);
+        Assert.Equal("newlabel", features[0].Name);
+        Assert.Equal("gbdemo-checkout-layout", features[1].Name);
+        Assert.Equal("filtered", features[2].Name);
     }
 
     // These tests seem to be using a different format to what the API returns...

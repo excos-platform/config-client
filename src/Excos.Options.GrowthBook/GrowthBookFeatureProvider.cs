@@ -121,7 +121,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
                     var variant = new Variant
                     {
                         Id = $"_:{ruleIdx}",
-                        Allocation = Allocation.Percentage(rule.Coverage),
+                        Allocation = Allocation.Percentage(rule.Coverage * 100),
                         Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
                         Priority = ruleIdx,
                         AllocationUnit = rule.HashAttribute,
