@@ -5,5 +5,7 @@ namespace Excos.Options.GrowthBook.Models;
 
 public class GrowthBookApiResponse
 {
-    public IDictionary<string, Feature>? Features { get; set; }
+    public required IDictionary<string, Feature> Features { get; set; }
+
+    public required DateTimeOffset DateUpdated { get; set; }
 }

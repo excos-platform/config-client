@@ -14,18 +14,17 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
     public const string ProviderName = nameof(GrowthBook);
 
     private readonly IOptionsMonitor<GrowthBookOptions> _options;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly GrowthBookApiCaller _growthBookApiCaller;
     private readonly ILogger<GrowthBookFeatureProvider> _logger;
 
     private List<Feature> _cachedFeatures = new();
-    private List<Feature> _secondaryCachedFeatures = new();
     private DateTimeOffset? _cacheExpiration;
     private Task? _requestFeaturesTask;
 
-    public GrowthBookFeatureProvider(IOptionsMonitor<GrowthBookOptions> options, IHttpClientFactory httpClientFactory, ILogger<GrowthBookFeatureProvider> logger)
+    public GrowthBookFeatureProvider(IOptionsMonitor<GrowthBookOptions> options, GrowthBookApiCaller growthBookApiCaller, ILogger<GrowthBookFeatureProvider> logger)
     {
         _options = options;
-        _httpClientFactory = httpClientFactory;
+        _growthBookApiCaller = growthBookApiCaller;
         _logger = logger;
 
         if (_options.CurrentValue.RequestFeaturesOnInitialization)
@@ -54,25 +53,22 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
 
         try
         {
-            var options = _options.CurrentValue;
-            var httpClient = _httpClientFactory.CreateClient(ProviderName);
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(options.ApiHost, $"/api/features/{options.ClientKey}"));
-            var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            _cacheExpiration = DateTimeOffset.UtcNow + _options.CurrentValue.CacheDuration;
 
-            var content = await response.Content.ReadAsStringAsync();
-            var features = JsonSerializer.Deserialize<Models.GrowthBookApiResponse>(content, new JsonSerializerOptions
+            var (updated, growthBookFeatures) = await _growthBookApiCaller.GetFeaturesAsync();
+
+            if (!updated)
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            });
+                return; // no changes, no need to parse the data
+            }
 
-            // update the secondary cache to not disrupt any current consumer of the primary cache
-            _secondaryCachedFeatures.Clear();
-            _secondaryCachedFeatures.AddRange(ConvertFeaturesToExcos(features));
+            // update a secondary cache to not disrupt any current consumer of the primary cache
+            var features = new List<Feature>(_cachedFeatures.Count);
+            features.AddRange(ConvertFeaturesToExcos(growthBookFeatures));
             // then swap them
-            _secondaryCachedFeatures = Interlocked.Exchange(ref _cachedFeatures, _secondaryCachedFeatures);
+            _ = Interlocked.Exchange(ref _cachedFeatures, features);
 
-            _cacheExpiration = DateTimeOffset.UtcNow + options.CacheDuration;
+            _logger.LogInformation("Loaded the following GrowthBook features: {features}", _cachedFeatures.Select(static f => $"{f.Name}[${f.Variants.Count}]"));
         }
         catch (Exception ex)
         {
@@ -85,14 +81,9 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
         }
     }
 
-    private static IEnumerable<Feature> ConvertFeaturesToExcos(Models.GrowthBookApiResponse? features)
+    private static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
     {
-        if (features?.Features is null)
-        {
-            yield break;
-        }
-
-        foreach (var gbFeature in features.Features)
+        foreach (var gbFeature in features)
         {
             var defaultValue = gbFeature.Value.DefaultValue; // TODO: this should be used for a configuration provider as a base value for the options
             var feature = new Feature
@@ -120,7 +111,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
                 {
                     var variant = new Variant
                     {
-                        Id = $"_:{ruleIdx}",
+                        Id = $":{ruleIdx}",
                         Allocation = Allocation.Percentage(rule.Coverage * 100),
                         Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
                         Priority = ruleIdx,

@@ -11,7 +11,7 @@
         <PackageId>Excos.Options.Growthbook</PackageId>
         <Version>1.0.0-alpha1</Version>
         <Authors>Marian Dziubiak and Contributors</Authors>
-        <Description>Growthbook integration with Excos.Options</Description>
+        <Description>GrowthBook integration with Excos.Options</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     </PropertyGroup>
 
