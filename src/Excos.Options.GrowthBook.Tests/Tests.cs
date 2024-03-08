@@ -1,13 +1,17 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using Excos.Options.Abstractions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Excos.Options.GrowthBook.Tests;
 
-public class UnitTest1
+public class Tests
 {
     private const string Payload =
     """
@@ -163,14 +167,10 @@ public class UnitTest1
     """;
 
     [Fact]
-    public async Task Test1()
+    public async Task FeaturesAreParsed()
     {
-        GrowthBookFeatureProvider provider = new(
-            new OptionsMonitor<GrowthBookOptions>(new GrowthBookOptions
-            {
-            }),
-            new MockHttpClientFactory(new MockHandler(Payload)),
-            new MockLogger<GrowthBookFeatureProvider>());
+        var host = BuildHost(new GrowthBookOptions());
+        var provider = (GrowthBookFeatureProvider)host.Services.GetRequiredService<IFeatureProvider>();
 
         var features = (await provider.GetFeaturesAsync(default)).ToList();
 
@@ -178,6 +178,17 @@ public class UnitTest1
         Assert.Equal("newlabel", features[0].Name);
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
         Assert.Equal("filtered", features[2].Name);
+    }
+
+    [Fact]
+    public async Task ConfigurationIsSetUp()
+    {
+        var host = BuildHost(new GrowthBookOptions());
+        await host.StartAsync();
+        var config = host.Services.GetRequiredService<IConfiguration>();
+
+        Assert.Equal("Old", config.GetValue<string>("MyOptions:Label"));
+        Assert.Equal("current", config.GetValue<string>("gbdemo-checkout-layout"));
     }
 
     // These tests seem to be using a different format to what the API returns...
@@ -204,6 +215,20 @@ public class UnitTest1
         Assert.True(ComparisonVersionStringFilter.TryParse(left, out var version));
         var algorithm = new ComparisonVersionStringFilter(i => i == 0, version);
         Assert.Equal(match, algorithm.IsSatisfiedBy(right));
+    }
+
+    private IHost BuildHost(GrowthBookOptions options)
+    {
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureExcosWithGrowthBook()
+            .ConfigureServices((_, services) =>
+            {
+                services.AddSingleton<IOptionsMonitor<GrowthBookOptions>>(_ => new OptionsMonitor<GrowthBookOptions>(options));
+                services.AddSingleton<ILogger<GrowthBookFeatureProvider>, MockLogger<GrowthBookFeatureProvider>>();
+                services.AddSingleton<IHttpClientFactory>(_ => new MockHttpClientFactory(new MockHandler(Payload)));
+            });
+
+        return builder.Build();
     }
 
     private class MockLogger<T> : ILogger<T>

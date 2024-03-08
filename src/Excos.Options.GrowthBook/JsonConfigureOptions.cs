@@ -11,20 +11,11 @@ namespace Excos.Options.GrowthBook;
 internal class JsonConfigureOptions : IConfigureOptions
 {
     private readonly IConfiguration _value;
-    public JsonConfigureOptions(string singleValueKey, JsonElement value)
+    public JsonConfigureOptions(string featureName, JsonElement value)
     {
-        if (value.ValueKind != JsonValueKind.Object)
-        {
-            _value = new ConfigurationBuilder()
-                .AddInMemoryCollection(new[] { KeyValuePair.Create(singleValueKey, value.GetString()) })
-                .Build();
-        }
-        else
-        {
-            _value = new ConfigurationBuilder()
-                .AddInMemoryCollection(JsonConfigurationFileParser.Parse(value))
-                .Build();
-        }
+        _value = new ConfigurationBuilder()
+            .AddInMemoryCollection(JsonConfigurationFileParser.Parse(featureName, value))
+            .Build();
     }
     public void Configure<TOptions>(TOptions input, string section) where TOptions : class
     {
@@ -32,7 +23,8 @@ internal class JsonConfigureOptions : IConfigureOptions
     }
 
     /// <summary>
-    /// Copied from Microsoft.Extensions.Configuration.Json
+    /// Copied from Microsoft.Extensions.Configuration.Json (MIT License)
+    /// Added some modifications.
     /// </summary>
     internal sealed class JsonConfigurationFileParser
     {
@@ -41,11 +33,37 @@ internal class JsonConfigureOptions : IConfigureOptions
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
 
-        public static IDictionary<string, string?> Parse(JsonElement input)
+        public static IDictionary<string, string?> Parse(string featureName, JsonElement input)
         {
             var parser = new JsonConfigurationFileParser();
-            parser.VisitObjectElement(input);
+            parser.VisitRootElement(featureName, input);
             return parser._data;
+        }
+
+        public static IDictionary<string, string?> Parse(IEnumerable<(string featureName, JsonElement value)> inputs)
+        {
+            var parser = new JsonConfigurationFileParser();
+            foreach (var input in inputs)
+            {
+                parser.VisitRootElement(input.featureName, input.value);
+            }
+            return parser._data;
+        }
+
+        private void VisitRootElement(string featureName, JsonElement root)
+        {
+            // We assume that an object at the root represents a JSON configuration, not just a single value.
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                VisitObjectElement(root);
+            }
+            else
+            {
+                EnterContext(featureName);
+                VisitValue(root);
+                ExitContext();
+            }
+
         }
 
         private void VisitObjectElement(JsonElement element)
@@ -106,15 +124,11 @@ internal class JsonConfigureOptions : IConfigureOptions
                 case JsonValueKind.False:
                 case JsonValueKind.Null:
                     string key = _paths.Peek();
-                    if (_data.ContainsKey(key))
-                    {
-                        throw new FormatException($"Error_KeyIsDuplicated {key}");
-                    }
                     _data[key] = value.ToString();
                     break;
 
                 default:
-                    throw new FormatException($"Error_KeyIsDuplicated {value.ValueKind}");
+                    break;
             }
         }
 
