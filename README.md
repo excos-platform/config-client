@@ -6,8 +6,10 @@ I got inspired to start working on this after writing [a blog post on experiment
 
 > **excos** - groups of people appointed or elected as the decision-making body of an organization
 
-> [!WARNING]  
-> It's very much a Work In Progress. Once it reaches some level of maturity I will publish a NuGet package.
+| Package | Version |
+| ------- | ------- |
+| Excos.Options            | [![NuGet version (Excos.Options)](https://img.shields.io/nuget/v/Excos.Options.svg)](https://www.nuget.org/packages/Excos.Options/) |
+| Excos.Options.GrowthBook | [![NuGet version (Excos.Options.GrowthBook)](https://img.shields.io/nuget/v/Excos.Options.GrowthBook.svg)](https://www.nuget.org/packages/Excos.Options.GrowthBook/) |
 
 ## Usage
 
