@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Excos.Options.Abstractions.Data;
+using Excos.Options.Utils;
 using static Excos.Options.GrowthBook.JsonConfigureOptions;
 
 namespace Excos.Options.GrowthBook

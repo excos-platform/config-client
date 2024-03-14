@@ -3,7 +3,7 @@
 
 namespace Excos.Options.GrowthBook.Models;
 
-public class GrowthBookApiResponse
+internal class GrowthBookApiResponse
 {
     public required IDictionary<string, Feature> Features { get; set; }
 

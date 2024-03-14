@@ -25,8 +25,19 @@ public readonly struct Allocation
         _range = range;
     }
 
+    /// <summary>
+    /// Checks if the given value is within the allocation range.
+    /// </summary>
+    /// <param name="value">Allocation point value.</param>
+    /// <returns>True if the <paramref name="value"/> is part of the allocation, false otherwise.</returns>
     public bool Contains(double value) => _range.Contains(value);
 
+    /// <summary>
+    /// Constructs an allocation from a percentage value [0; <paramref name="percentage"/> / 100].
+    /// </summary>
+    /// <param name="percentage">Percentage value between 0 and 100 (inclusive).</param>
+    /// <returns>An allocation value for the specified percentage.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Allocation must be a range between 0% and 100%.</exception>
     public static Allocation Percentage(double percentage)
     {
         if (percentage < 0 || percentage > 100)

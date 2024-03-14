@@ -5,14 +5,23 @@ using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
 using Excos.Options.Providers.Configuration.FilterParsers;
+using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Excos.Options.Providers.Configuration;
 
+/// <summary>
+/// Extension methods for configuring Excos features using <see cref="IServiceCollection"/>.
+/// </summary>
 public static class FeatureConfigurationExtensions
 {
+    /// <summary>
+    /// Configures Excos features from <see cref="Microsoft.Extensions.Configuration"/> using <paramref name="sectionName"/>.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+    /// <param name="sectionName">Section name to use to look up the configuration.</param>
     public static void ConfigureExcosFeatures(this IServiceCollection services, string sectionName)
     {
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureFilterParser), typeof(StringFilterParser), ServiceLifetime.Singleton));

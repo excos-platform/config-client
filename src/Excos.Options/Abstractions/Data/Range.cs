@@ -32,8 +32,19 @@ public readonly struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<
         Type = type;
     }
 
+    /// <summary>
+    /// Beginning of the range.
+    /// </summary>
     public T Start { get; }
+
+    /// <summary>
+    /// End of the range.
+    /// </summary>
     public T End { get; }
+    
+    /// <summary>
+    /// Type of the range in terms of inclusivity of beginning and end.
+    /// </summary>
     public RangeType Type { get; }
 
     /// <summary>
@@ -74,6 +85,7 @@ public readonly struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<
         return true;
     }
 
+    /// <inheritdoc/>
     public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Range<T> result)
     {
         var rangeType = RangeType.ExcludeBoth;
@@ -118,15 +130,21 @@ public readonly struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<
         return false;
     }
 
+    /// <inheritdoc/>
     public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Range<T> result)
         => TryParse(s.AsSpan(), provider, out result);
 
+    /// <inheritdoc/>
     public static Range<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         => TryParse(s, provider, out var result) ? result : throw new ArgumentException("Couldn't parse the range.");
 
+    /// <inheritdoc/>
     public static Range<T> Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
 }
 
+/// <summary>
+/// Type of the range in terms of inclusivity of beginning and end.
+/// </summary>
 [Flags]
 public enum RangeType
 {

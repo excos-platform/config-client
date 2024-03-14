@@ -380,9 +380,9 @@ public class OptionsBasedFeaturesTests
 
         Assert.NotNull(options.Metadata);
         Assert.Equal(2, options.Metadata.Features.Count);
-        Assert.Equal("TestFeature", options.Metadata.Features[0].FeatureName);
-        Assert.Equal("TestExperiment", options.Metadata.Features[1].FeatureName);
-        Assert.Equal("B", options.Metadata.Features[1].VariantId);
+        Assert.Equal("TestFeature", options.Metadata.Features.ElementAt(0).FeatureName);
+        Assert.Equal("TestExperiment", options.Metadata.Features.ElementAt(1).FeatureName);
+        Assert.Equal("B", options.Metadata.Features.ElementAt(1).VariantId);
 
         Assert.Equal("XX", options.Label);
         Assert.Equal(10, options.Length);

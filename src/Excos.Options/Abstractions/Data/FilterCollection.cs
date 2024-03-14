@@ -5,15 +5,11 @@ using System.Collections.ObjectModel;
 
 namespace Excos.Options.Abstractions.Data;
 
+/// <summary>
+/// Keyed collection of filters, indexed by their property names.
+/// </summary>
 public class FilterCollection : KeyedCollection<string, Filter>
 {
+    /// <inheritdoc />
     protected override string GetKeyForItem(Filter item) => item.PropertyName;
-
-    public void AddRange(IEnumerable<Filter> filters)
-    {
-        foreach (var filter in filters)
-        {
-            Add(filter);
-        }
-    }
 }

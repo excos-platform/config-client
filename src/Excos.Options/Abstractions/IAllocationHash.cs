@@ -3,6 +3,9 @@
 
 namespace Excos.Options.Abstractions
 {
+    /// <summary>
+    /// Algorithm for computing a hash of the identifier for use in allocation calculations.
+    /// </summary>
     public interface IAllocationHash
     {
         /// <summary>

@@ -8,7 +8,7 @@ namespace Excos.Options.GrowthBook.Models;
 /// <summary>
 /// Overrides the defaultValue of a Feature.
 /// </summary>
-public class FeatureRule
+internal class FeatureRule
 {
     /// <summary>
     /// Optional targeting condition.

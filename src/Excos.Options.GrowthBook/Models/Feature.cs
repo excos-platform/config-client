@@ -8,7 +8,7 @@ namespace Excos.Options.GrowthBook.Models;
 /// <summary>
 /// Represents an object consisting of a default value plus rules that can override the default.
 /// </summary>
-public class Feature
+internal class Feature
 {
     public JsonElement DefaultValue { get; set; }
 

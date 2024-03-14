@@ -7,16 +7,25 @@ using Excos.Options.Abstractions.Data;
 
 namespace Excos.Options.Filtering;
 
+/// <summary>
+/// A filtering condition that checks if a value is within a specified range.
+/// </summary>
+/// <typeparam name="F">Type of the range.</typeparam>
 public class RangeFilteringCondition<F> : IFilteringCondition
     where F : IComparable<F>, ISpanParsable<F>
 {
     private readonly Range<F> _range;
 
+    /// <summary>
+    /// Creates a new filtering condition that checks if a value is within a specified range.
+    /// </summary>
+    /// <param name="range">Range to check.</param>
     public RangeFilteringCondition(Range<F> range)
     {
         _range = range;
     }
 
+    /// <inheritdoc/>
     public bool IsSatisfiedBy<T>(T value)
     {
         if (typeof(T) == typeof(F))
@@ -39,7 +48,7 @@ public class RangeFilteringCondition<F> : IFilteringCondition
         return false;
     }
 
-    private bool TryQuickConvertNumber<T>(T value, out F val)
+    private static bool TryQuickConvertNumber<T>(T value, out F val)
     {
         // special casing for double ranges as that's what will be primarily done from configuration
         if (typeof(F) == typeof(double))

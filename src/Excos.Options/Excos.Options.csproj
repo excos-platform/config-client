@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     
     <!-- Do not warn about contextual being an experimental API -->
     <NoWarn>EXTEXP0017</NoWarn>
@@ -29,7 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName).Tests, PublicKey=$(StrongNamePublicKey)" />
+      <InternalsVisibleTo Include="$(AssemblyName).Tests, PublicKey=$(StrongNamePublicKey)" />
+      <InternalsVisibleTo Include="$(AssemblyName).GrowthBook, PublicKey=$(StrongNamePublicKey)" />
   </ItemGroup>
 
 </Project>

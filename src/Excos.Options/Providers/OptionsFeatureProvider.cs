@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Excos.Options.Providers;
 
-public class OptionsFeatureProvider : IFeatureProvider
+internal class OptionsFeatureProvider : IFeatureProvider
 {
     private readonly IOptionsMonitor<FeatureCollection> _options;
 

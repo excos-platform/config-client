@@ -5,15 +5,11 @@ using System.Collections.ObjectModel;
 
 namespace Excos.Options.Abstractions.Data;
 
+/// <summary>
+/// Keyed collection of variants, indexed by their IDs.
+/// </summary>
 public class VariantCollection : KeyedCollection<string, Variant>
 {
+    /// <inheritdoc />
     protected override string GetKeyForItem(Variant item) => item.Id;
-
-    public void AddRange(IEnumerable<Variant> variants)
-    {
-        foreach (var variant in variants)
-        {
-            Add(variant);
-        }
-    }
 }

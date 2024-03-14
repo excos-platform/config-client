@@ -3,7 +3,7 @@
 
 namespace Excos.Options.GrowthBook.Models;
 
-public class VariationMeta
+internal class VariationMeta
 {
     /// <summary>
     /// Used to implement holdout groups

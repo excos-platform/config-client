@@ -8,5 +8,8 @@ namespace Excos.Options.Abstractions;
 /// </summary>
 public interface IPooledConfigureOptions : IConfigureOptions
 {
+    /// <summary>
+    /// Returns the instance to the pool.
+    /// </summary>
     public void ReturnToPool();
 }

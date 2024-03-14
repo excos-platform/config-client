@@ -9,17 +9,20 @@ using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Contextual;
 
+/// <summary>
+/// Extension methods for adding Excos contextual options configuration.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Configures an Excos <see cref="IContextualOptions"/> loader for the specified <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
+    /// Configures an Excos <see cref="IContextualOptions{TOptions}"/> loader for the specified <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
     /// </summary>
     public static IServiceCollection ConfigureExcos<TOptions>(this IServiceCollection services, string section)
         where TOptions : class
     => services.ConfigureExcos<TOptions>(Microsoft.Extensions.Options.Options.DefaultName, section);
 
     /// <summary>
-    /// Configures an Excos <see cref="IContextualOptions"/> loader for the specified named <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
+    /// Configures an Excos <see cref="IContextualOptions{TOptions}"/> loader for the specified named <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
     /// </summary>
     public static IServiceCollection ConfigureExcos<TOptions>(this IServiceCollection services, string name, string section)
         where TOptions : class
