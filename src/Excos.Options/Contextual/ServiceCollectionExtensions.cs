@@ -32,6 +32,8 @@ public static class ServiceCollectionExtensions
             services.AddOptions<TOptions>(name).BindConfiguration(section);
         }
 
+        services.AddOptions<ExcosOptions>();
+
         return services
             .AddContextualOptions()
             .AddSingleton<ILoadContextualOptions<TOptions>>(sp =>
