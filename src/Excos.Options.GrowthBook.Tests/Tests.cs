@@ -175,8 +175,20 @@ public class Tests
         var features = (await provider.GetFeaturesAsync(default)).ToList();
 
         Assert.Equal(3, features.Count);
+
         Assert.Equal("newlabel", features[0].Name);
+        Assert.Equal(2, features[0].Variants.Count);
+        Assert.Equal("label:0", features[0].Variants[0].Id);
+        Assert.Equal("label:1", features[0].Variants[1].Id);
+        Assert.Equal(2, features[0].Variants[0].Filters.Count);
+        Assert.True(features[0].Variants[0].Filters.Contains("country"));
+        Assert.Equal("country", features[0].Variants[0].Filters["country"].PropertyName);
+        var inFilter = Assert.IsType<InFilter>(Assert.Single(features[0].Variants[0].Filters["country"].Conditions));
+        Assert.True(inFilter.IsSatisfiedBy("US"));
+        Assert.True(inFilter.IsSatisfiedBy("UK"));
+
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
+
         Assert.Equal("filtered", features[2].Name);
     }
 
