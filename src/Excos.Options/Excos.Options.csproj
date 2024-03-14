@@ -19,6 +19,8 @@
         <Authors>Marian Dziubiak and Contributors</Authors>
         <Description>Excos.Options provides a feature/experiment management system on top of Options.Contextual</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/manio143/excos</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +29,10 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.0.0-rtm.23558.11,8.0.0)" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>

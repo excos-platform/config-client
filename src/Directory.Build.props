@@ -4,4 +4,8 @@
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\key.snk</AssemblyOriginatorKeyFile>
     <StrongNamePublicKey>0024000004800000940000000602000000240000525341310004000001000100e578b963c8b194bf41d19e8b315ed55e971d251cb8dbc0b156fe3af14c4f3e5fd873936050d5ba80067cc4f1b2ceceafc8042082bc2776a0f7fe62c122f2e41e4fd8ffdeb921cf56cb4e43377d0f4d0f19723ff1c190fb3d0c39128e5ca328c977b0662177beaef6ce0a93321f7beeb7cc20e63cb1c0446c7dc0494fe21584ed</StrongNamePublicKey>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)\..\nuget</PackageOutputPath>
+  </PropertyGroup>
 </Project>

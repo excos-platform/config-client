@@ -24,7 +24,9 @@ var options = await contextualOptions.GetAsync(new MyContext { UserId = "deadbee
 
 ## Roadmap
 
-1. Experiment data model implementation and contextual options loader. With options based provider.
-2. Extension methods for fluent experiment setup (over options provider).
-3. EF Core based provider.
-4. GrowthBook integration (configuration provider + experiments provider).
+1. ✔️Experiment data model implementation and contextual options loader. With options based provider.
+2. ✔️Extension methods for fluent experiment setup (over options provider).
+3. ~~EF Core based provider~~.
+4. ✔️GrowthBook integration (configuration provider + experiments provider).
+
+Check out the [GrowthBook integration guide](docs/GrowthBookGuide.md).
