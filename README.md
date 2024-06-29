@@ -19,7 +19,7 @@ See [Usage](docs/Usage.md) for more details and unit tests for code samples.
 services.ConfigureExcos<MyOptions>("MySection");
 services.ConfigureExcosFeatures("Features");
 
-var contextualOptions = provider.GetRequiredService<IContextualOptions<MyOptions>>();
+var contextualOptions = provider.GetRequiredService<IContextualOptions<MyOptions, MyContext>>();
 var options = await contextualOptions.GetAsync(new MyContext { UserId = "deadbeef" }, default);
 // options.MyValue
 ```

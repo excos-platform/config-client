@@ -35,7 +35,7 @@ public partial struct StoreOptionsContext
 }
 ```
 
-For this example we will inject `IContextualOptions<CatalogDisplayOptions>` directly into the `IndexModel` class. We will create an extension method over the `HttpContext` to get (or create) a session identifier.
+For this example we will inject `IContextualOptions<CatalogDisplayOptions, StoreOptionsContext>` directly into the `IndexModel` class. We will create an extension method over the `HttpContext` to get (or create) a session identifier.
 
 ```csharp
 public static class ContextualExtensions
@@ -72,11 +72,11 @@ And modify the index model to retrieve the options
 public class IndexModel : PageModel
 {
     private readonly ICatalogViewModelService _catalogViewModelService;
-    private readonly IContextualOptions<CatalogDisplayOptions> _contextualOptions;
+    private readonly IContextualOptions<CatalogDisplayOptions, StoreOptionsContext> _contextualOptions;
 
     public IndexModel(
         ICatalogViewModelService catalogViewModelService,
-        IContextualOptions<CatalogDisplayOptions> contextualOptions)
+        IContextualOptions<CatalogDisplayOptions, StoreOptionsContext> contextualOptions)
     {
         _catalogViewModelService = catalogViewModelService;
         _contextualOptions = contextualOptions;

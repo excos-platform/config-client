@@ -3,7 +3,7 @@
 
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Utils;
-using Microsoft.Extensions.Options.Contextual;
+using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
 

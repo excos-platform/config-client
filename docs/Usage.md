@@ -82,10 +82,10 @@ internal class WeatherForecast
 
 internal class WeatherForecastService
 {
-    private readonly IContextualOptions<WeatherForecastOptions> _contextualOptions;
+    private readonly IContextualOptions<WeatherForecastOptions, WeatherForecastContext> _contextualOptions;
     private readonly Random _rng = new(0);
 
-    public WeatherForecastService(IContextualOptions<WeatherForecastOptions> contextualOptions)
+    public WeatherForecastService(IContextualOptions<WeatherForecastOptions, WeatherForecastContext> contextualOptions)
     {
         _contextualOptions = contextualOptions;
     }

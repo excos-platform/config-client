@@ -5,6 +5,7 @@ using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
+using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
 

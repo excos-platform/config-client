@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
+using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
 
@@ -15,14 +16,14 @@ namespace Excos.Options.Contextual;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Configures an Excos <see cref="IContextualOptions{TOptions}"/> loader for the specified <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
+    /// Configures an Excos <see cref="IContextualOptions{TOptions,TContext}"/> loader for the specified <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
     /// </summary>
     public static IServiceCollection ConfigureExcos<TOptions>(this IServiceCollection services, string section)
         where TOptions : class
     => services.ConfigureExcos<TOptions>(Microsoft.Extensions.Options.Options.DefaultName, section);
 
     /// <summary>
-    /// Configures an Excos <see cref="IContextualOptions{TOptions}"/> loader for the specified named <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
+    /// Configures an Excos <see cref="IContextualOptions{TOptions,TContext}"/> loader for the specified named <typeparamref name="TOptions"/> type using the <paramref name="section"/> of configuration.
     /// </summary>
     public static IServiceCollection ConfigureExcos<TOptions>(this IServiceCollection services, string name, string section)
         where TOptions : class

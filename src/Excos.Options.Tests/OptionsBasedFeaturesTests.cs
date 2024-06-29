@@ -56,7 +56,7 @@ public class OptionsBasedFeaturesTests
             }
         })));
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var optionsWithUser = await contextual.GetAsync(new ContextWithIdentifier { UserId = "user1" }, default);
         var optionsWithoutUser = await contextual.GetAsync(new ContextWithIdentifier(), default);
 
@@ -120,7 +120,7 @@ public class OptionsBasedFeaturesTests
             }
         })));
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1 }, default);
 
         Assert.NotNull(options.Metadata);
@@ -181,7 +181,7 @@ public class OptionsBasedFeaturesTests
             }
         })));
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1 }, default);
 
         Assert.NotNull(options.Metadata);
@@ -244,7 +244,7 @@ public class OptionsBasedFeaturesTests
             }
         })));
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1 }, default);
 
         Assert.NotNull(options.Metadata);
@@ -307,7 +307,7 @@ public class OptionsBasedFeaturesTests
             }
         })));
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1 }, default);
 
         Assert.NotNull(options.Metadata);
@@ -351,7 +351,7 @@ public class OptionsBasedFeaturesTests
             services.AddSingleton<IFeatureVariantOverride>(new TestOverride("TestFeature", "US"));
         });
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "PL" }, default);
 
         Assert.NotNull(options.Metadata);
@@ -375,7 +375,7 @@ public class OptionsBasedFeaturesTests
             .ABExperiment<TestOptions>((options, _) => options.Length = 5, (options, _) => options.Length = 10)
             .Save());
 
-        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var options = await contextual.GetAsync(new ContextWithIdentifier { Market = "US", AgeGroup = 1, UserId = "test", SessionId = "testSession" }, default);
 
         Assert.NotNull(options.Metadata);

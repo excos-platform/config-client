@@ -30,7 +30,7 @@ public class ExcosVsFeatureManagement
     {
         var services = new ServiceCollection();
         services.ConfigureExcos<TestOptions>("Test");
-        services.AddSingleton<IFeatureProvider, OptionsFeatureProvider>();
+        services.AddExcosOptionsFeatureProvider();
         services.AddOptions<FeatureCollection>()
         .Configure(features => features.Add(new Feature
         {
@@ -85,7 +85,7 @@ public class ExcosVsFeatureManagement
     public object BuildAndResolveExcos()
     {
         var provider = BuildExcosProvider();
-        return provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        return provider.GetRequiredService<IContextualOptions<TestOptions, TestContext>>();
     }
 
     [Benchmark]
@@ -99,7 +99,7 @@ public class ExcosVsFeatureManagement
     public async Task<string> GetExcosSettingsPooled()
     {
         PrivateObjectPool.EnablePooling = true;
-        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions, TestContext>>();
         var options = await contextualOptions.GetAsync(new TestContext(), default);
         return options.Setting;
     }
@@ -108,7 +108,7 @@ public class ExcosVsFeatureManagement
     public async Task<string> GetExcosSettingsNew()
     {
         PrivateObjectPool.EnablePooling = false;
-        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions, TestContext>>();
         var options = await contextualOptions.GetAsync(new TestContext(), default);
         return options.Setting;
     }

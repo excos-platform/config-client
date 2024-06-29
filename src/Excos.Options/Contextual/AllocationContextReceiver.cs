@@ -5,7 +5,7 @@ using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using Excos.Options.Abstractions;
 using Excos.Options.Utils;
-using Microsoft.Extensions.Options.Contextual;
+using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
 

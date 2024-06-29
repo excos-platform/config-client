@@ -15,7 +15,7 @@
 
     <PropertyGroup>
         <PackageId>Excos.Options</PackageId>
-        <Version>1.0.0-alpha1</Version>
+        <Version>1.0.0-alpha2</Version>
         <Authors>Marian Dziubiak and Contributors</Authors>
         <Description>Excos.Options provides a feature/experiment management system on top of Options.Contextual</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -27,7 +27,7 @@
     <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" ReferenceOutputAssembly="false" />
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
-    <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.0.0-rtm.23558.11,8.0.0)" />
+    <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.6.0-rtm.24311.4,9.0.0)" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 

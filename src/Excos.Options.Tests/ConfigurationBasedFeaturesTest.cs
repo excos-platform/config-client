@@ -114,7 +114,7 @@ public class ConfigurationBasedFeaturesTest
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
 
-        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
 
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
         {
@@ -176,7 +176,7 @@ public class ConfigurationBasedFeaturesTest
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
 
-        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions>>();
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
 
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
         {
