@@ -30,6 +30,7 @@ internal abstract class PropertyFilteringCondition : IFilteringCondition
         private readonly string _propertyName;
         private readonly PropertyFilteringCondition _condition;
 
+        // defaults to false - if no property we expect is received
         public bool IsSatisfied { get; private set; }
 
         public PropertyValueReceiver(string propertyName, PropertyFilteringCondition condition)

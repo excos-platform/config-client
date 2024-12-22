@@ -38,7 +38,7 @@ internal static class FilterParser
         return new JsonFilteringCondition(filter);
     }
 
-    private static IFilter ParseCondition(JsonElement condition)
+    internal static IFilter ParseCondition(JsonElement condition)
     {
         if (condition.ValueKind == JsonValueKind.Object)
         {
@@ -65,7 +65,6 @@ internal static class FilterParser
 
     private static IFilter ParseConditionOperator(JsonProperty property)
     {
-        Version? version;
         switch (property.Name)
         {
             case "$exists":
@@ -73,11 +72,10 @@ internal static class FilterParser
                 {
                     return new NotFilter(new ExistsFilter());
                 }
-                else if (property.Value.ValueKind == JsonValueKind.True)
+                else
                 {
                     return new ExistsFilter();
                 }
-                break;
             case "$not":
                 return new NotFilter(ParseCondition(property.Value));
             case "$and":
@@ -87,21 +85,23 @@ internal static class FilterParser
             case "$nor":
                 return new NotFilter(new OrFilter(property.Value.EnumerateArray().Select(ParseCondition)));
             case "$in":
+                if (property.Value.ValueKind != JsonValueKind.Array)
                 {
-                    return new InFilter(property.Value.EnumerateArray());
+                    return NeverFilter.Instance;
                 }
-
+                return new InFilter(property.Value.EnumerateArray());
             case "$nin":
+                if (property.Value.ValueKind != JsonValueKind.Array)
                 {
-                    return new NotFilter(new InFilter(property.Value.EnumerateArray()));
+                    return NeverFilter.Instance;
                 }
-
+                return new NotFilter(new InFilter(property.Value.EnumerateArray()));
             case "$all":
                 return new AllFilter(property.Value.EnumerateArray().Select(ParseCondition));
             case "$elemMatch":
                 return new ElemMatchFilter(ParseCondition(property.Value));
             case "$size":
-                return new SizeFilter(property.Value.GetInt32());
+                return new SizeFilter(ParseCondition(property.Value));
             case "$gt":
                 return new ComparisonFilter(ComparisonType.GreaterThan, property.Value);
             case "$gte":
@@ -116,35 +116,18 @@ internal static class FilterParser
                 return new ComparisonFilter(ComparisonType.NotEqual, property.Value);
             case "$regex":
                 return new RegexFilter(property.Value.GetString()!);
-            case "$vgt" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r > 0, version);
-                }
-
-            case "$vgte" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r >= 0, version);
-                }
-
-            case "$vlt" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r < 0, version); ;
-                }
-
-            case "$vlte" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r <= 0, version);
-                }
-
-            case "$veq" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r == 0, version);
-                }
-
-            case "$vne" when ComparisonVersionStringFilter.TryParse(property.Value.GetString()!, out version):
-                {
-                    return new ComparisonVersionStringFilter(r => r != 0, version);
-                }
+            case "$vgt":
+                return new ComparisonVersionStringFilter(ComparisonType.GreaterThan, property.Value.GetString() ?? string.Empty);
+            case "$vgte":
+                return new ComparisonVersionStringFilter(ComparisonType.GreaterThanOrEqual, property.Value.GetString() ?? string.Empty);
+            case "$vlt":
+                return new ComparisonVersionStringFilter(ComparisonType.LessThan, property.Value.GetString() ?? string.Empty);
+            case "$vlte":
+                return new ComparisonVersionStringFilter(ComparisonType.LessThanOrEqual, property.Value.GetString() ?? string.Empty);
+            case "$veq":
+                return new ComparisonVersionStringFilter(ComparisonType.Equal, property.Value.GetString() ?? string.Empty);
+            case "$vne":
+                return new ComparisonVersionStringFilter(ComparisonType.NotEqual, property.Value.GetString() ?? string.Empty);
             case "$type":
                 return new TypeFilter(property.Value.GetString()!);
             default:
@@ -172,21 +155,33 @@ internal class NamespaceFilteringCondition : PropertyFilteringCondition
     }
 }
 
-//TODO
 internal class AllocationFilteringCondition : PropertyFilteringCondition
 {
-    private readonly Range<double> _range;
+    private readonly string _salt;
+    private readonly GrowthBookHash _hash;
+    private readonly Allocation _range;
 
-    public AllocationFilteringCondition(string allocationUnit, Range<double> range)
+    public AllocationFilteringCondition(string allocationUnit, string salt, GrowthBookHash hash, Allocation range)
         : base(allocationUnit)
     {
+        _salt = salt;
+        _hash = hash;
         _range = range;
     }
 
     protected override bool PropertyPredicate<T>(T value)
     {
-        var n = GrowthBookHash.V2.GetAllocationSpot($"__{_namespaceId}", value?.ToString() ?? string.Empty);
+        var n = _hash.GetAllocationSpot(value?.ToString() ?? string.Empty, _salt);
         return _range.Contains(n);
+    }
+}
+
+internal class NeverFilter : IFilter
+{
+    public static NeverFilter Instance = new();
+    public bool IsSatisfied(JsonElement context)
+    {
+        return false;
     }
 }
 
@@ -209,7 +204,8 @@ internal class OrFilter : IFilter
             }
         }
 
-        return false;
+        // return true if empty, false otherwise
+        return !_conditions.Any();
     }
 }
 
@@ -274,7 +270,7 @@ internal class InFilter : IFilter
         {
             foreach (var elem in context.EnumerateArray())
             {
-                if (_values.Contains(elem))
+                if (_values.Contains(elem, Comparison.ElementComparer))
                 {
                     return true;
                 }
@@ -284,7 +280,7 @@ internal class InFilter : IFilter
         }
         else
         {
-            return _values.Contains(context);
+            return _values.Contains(context, Comparison.ElementComparer);
         }
     }
 }
@@ -312,10 +308,34 @@ internal class ComparisonFilter : IFilter
 
     public bool IsSatisfied(JsonElement context)
     {
-        return Compare(context, _value, _comparisonType);
+        return Comparison.Compare(context, _value, _comparisonType);
     }
+}
 
-    private static bool Compare<T>(T left, T right, ComparisonType comparisonType) where T : IComparable<T>
+internal static class Comparison
+{
+    // we will do case insensitive equality comparison for string values
+    public static bool Compare(string left, string right, ComparisonType comparisonType)
+    {
+        switch (comparisonType)
+        {
+            case ComparisonType.Equal:
+                return left.Equals(right, StringComparison.OrdinalIgnoreCase);
+            case ComparisonType.NotEqual:
+                return !left.Equals(right, StringComparison.OrdinalIgnoreCase);
+            case ComparisonType.GreaterThan:
+                return string.Compare(left, right, StringComparison.OrdinalIgnoreCase) > 0;
+            case ComparisonType.GreaterThanOrEqual:
+                return string.Compare(left, right, StringComparison.OrdinalIgnoreCase) >= 0;
+            case ComparisonType.LessThan:
+                return string.Compare(left, right, StringComparison.OrdinalIgnoreCase) < 0;
+            case ComparisonType.LessThanOrEqual:
+                return string.Compare(left, right, StringComparison.OrdinalIgnoreCase) <= 0;
+            default:
+                return false;
+        }
+    }
+    public static bool Compare<T>(T left, T right, ComparisonType comparisonType) where T : IComparable<T>
     {
         switch (comparisonType)
         {
@@ -336,9 +356,26 @@ internal class ComparisonFilter : IFilter
         }
     }
 
-    private static bool Compare(JsonElement left, JsonElement right, ComparisonType comparisonType)
+    public static bool Compare(JsonElement left, JsonElement right, ComparisonType comparisonType)
     {
-        if (left.ValueKind != right.ValueKind)
+        if (left.ValueKind == JsonValueKind.String && right.ValueKind == JsonValueKind.Number
+        && double.TryParse(left.GetString(), out var number))
+        {
+            return Compare(number, right.GetDouble(), comparisonType);
+        }
+        else if (left.ValueKind == JsonValueKind.Number && right.ValueKind == JsonValueKind.String
+        && double.TryParse(right.GetString(), out number))
+        {
+            return Compare(left.GetDouble(), number, comparisonType);
+        }
+        else if ((left.ValueKind == JsonValueKind.Undefined && right.ValueKind == JsonValueKind.Null)
+        || (left.ValueKind == JsonValueKind.Null && right.ValueKind == JsonValueKind.Undefined)
+        && comparisonType == ComparisonType.Equal)
+        {
+            // special case null = undefined
+            return true;
+        }
+        else if (left.ValueKind != right.ValueKind)
         {
             return false;
         }
@@ -355,62 +392,22 @@ internal class ComparisonFilter : IFilter
             case JsonValueKind.Null:
                 return comparisonType == ComparisonType.Equal;
             case JsonValueKind.Undefined:
-                return comparisonType == ComparisonType.NotEqual;
-            case JsonValueKind.Object:
-                if (comparisonType != ComparisonType.Equal && comparisonType != ComparisonType.NotEqual)
-                {
-                    // we cannot compare objects this way
-                    return false;    
-                }
-                // basically we try to return true in not equal and false if equal
-                var falseResponse = comparisonType == ComparisonType.NotEqual;
-                foreach (var property in left.EnumerateObject())
-                {
-                    if (!right.TryGetProperty(property.Name, out var value))
-                    {
-                        return falseResponse;
-                    }
-
-                    if (!Compare(property.Value, value, ComparisonType.Equal))
-                    {
-                        return falseResponse;
-                    }
-                }
-                foreach (var property in right.EnumerateObject())
-                {
-                    if (!left.TryGetProperty(property.Name, out var value))
-                    {
-                        return falseResponse;
-                    }
-                }
-                return !falseResponse;
-            case JsonValueKind.Array:
-                if (comparisonType != ComparisonType.Equal && comparisonType != ComparisonType.NotEqual)
-                {
-                    // we cannot compare objects this way
-                    return false;
-                }
-                // basically we try to return true in not equal and false if equal
-                falseResponse = comparisonType == ComparisonType.NotEqual;
-                if (left.GetArrayLength() != right.GetArrayLength())
-                {
-                    return falseResponse;
-                }
-                for (int i = 0; i < left.GetArrayLength(); i++)
-                {
-                    if (!Compare(left[i], right[i], ComparisonType.Equal))
-                    {
-                        return falseResponse;
-                    }
-                }
-                return !falseResponse;
             default:
                 return false;
         }
     }
+
+    public static IEqualityComparer<JsonElement> ElementComparer = new JsonElementComparer();
+    private class JsonElementComparer : IEqualityComparer<JsonElement>
+    {
+        public bool Equals(JsonElement x, JsonElement y)
+            => Compare(x, y, ComparisonType.Equal);
+
+        public int GetHashCode([DisallowNull] JsonElement obj)
+            => obj.GetRawText().GetHashCode();
+    }
 }
 
-// TODO rework this bitch
 internal class ComparisonVersionStringFilter : IFilter
 {
     private readonly ComparisonType _comparisonType;
@@ -424,9 +421,8 @@ internal class ComparisonVersionStringFilter : IFilter
 
     public bool IsSatisfied(JsonElement context)
     {
-        
-
-        return false;
+        var value = GetPaddedVersionString(context.GetString() ?? string.Empty);
+        return Comparison.Compare(value, _value, _comparisonType);
     }
 
     // https://docs.growthbook.io/lib/build-your-own#private-paddedversionstringinput-string
@@ -442,7 +438,7 @@ internal class ComparisonVersionStringFilter : IFilter
         int i = 0;
         for (; i < parts.Length; i++)
         {
-            if (Regex.IsMatch(parts[i], "^[0-9]+")
+            if (Regex.IsMatch(parts[i], "^[0-9]+"))
             {
                 var padding = 5 - parts[i].Length;
                 builder.Append(' ', padding > 0 ? padding : 0);
@@ -502,18 +498,18 @@ internal class ElemMatchFilter : IFilter
 
 internal class SizeFilter : IFilter
 {
-    private readonly int _size;
+    private readonly IFilter _inner;
 
-    public SizeFilter(int size)
+    public SizeFilter(IFilter inner)
     {
-        _size = size;
+        _inner = inner;
     }
 
     public bool IsSatisfied(JsonElement context)
     {
         if (context.ValueKind == JsonValueKind.Array)
         {
-            return context.GetArrayLength() == _size;
+            return _inner.IsSatisfied(JsonSerializer.SerializeToElement(context.GetArrayLength()));
         }
 
         return false;
@@ -619,8 +615,23 @@ internal class PropertyFilter : IFilter
         JsonElement target = context;
         foreach (var segment in _path)
         {
-            if (target.ValueKind != JsonValueKind.Object ||
-                !target.TryGetProperty(segment, out target))
+            if (target.ValueKind != JsonValueKind.Object)
+            {
+                target = new JsonElement(); // kind = undefined
+                break;
+            }
+
+            var found = false;
+            foreach (var property in target.EnumerateObject())
+            {
+                if (property.Name.Equals(segment, StringComparison.OrdinalIgnoreCase))
+                {
+                    target = property.Value;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
             {
                 target = new JsonElement(); // kind = undefined
             }
@@ -632,13 +643,20 @@ internal class PropertyFilter : IFilter
 
 internal class RegexFilter : IFilter
 {
-    private readonly Regex _regex;
+    private readonly Regex? _regex;
     public RegexFilter(string pattern)
     {
-        _regex = new Regex(pattern);
+        try
+        {
+            _regex = new Regex(pattern);
+        }
+        catch(RegexParseException)
+        {
+            _regex = null;
+        }
     }
     public bool IsSatisfied(JsonElement context)
     {
-        return _regex.IsMatch(context.GetString() ?? string.Empty);
+        return _regex?.IsMatch(context.GetString() ?? string.Empty) ?? false;
     }
 }
