@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Do not warn about contextual being an experimental API -->
+    <NoWarn>EXTEXP0017</NoWarn>
   </PropertyGroup>
 
     <PropertyGroup>

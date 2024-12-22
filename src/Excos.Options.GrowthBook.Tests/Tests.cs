@@ -220,6 +220,7 @@ public class Tests
         Assert.Equal(result, hash == -1 ? null : hash);
     }
 
+    // TODO: fix the version comparison for pre-release versions
     [Theory]
     [MemberData(nameof(Cases.VersionCompareEQ), MemberType = typeof(Cases))]
     public void VersionCompareEQ_Test(string left, string right, bool match)

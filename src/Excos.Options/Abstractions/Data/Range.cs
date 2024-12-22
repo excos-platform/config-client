@@ -41,7 +41,7 @@ public readonly struct Range<T> : ISpanParsable<Range<T>> where T : IComparable<
     /// End of the range.
     /// </summary>
     public T End { get; }
-    
+
     /// <summary>
     /// Type of the range in terms of inclusivity of beginning and end.
     /// </summary>

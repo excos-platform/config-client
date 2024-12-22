@@ -17,6 +17,8 @@ namespace Excos.Options.Providers.Configuration;
 /// </summary>
 public static class FeatureConfigurationExtensions
 {
+    const string ProviderName = "Configuration";
+
     /// <summary>
     /// Configures Excos features from <see cref="Microsoft.Extensions.Configuration"/> using <paramref name="sectionName"/>.
     /// </summary>
@@ -28,47 +30,55 @@ public static class FeatureConfigurationExtensions
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureFilterParser), typeof(RangeFilterParser), ServiceLifetime.Singleton));
 
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureProvider), typeof(OptionsFeatureProvider), ServiceLifetime.Singleton));
-        services.AddOptions<FeatureCollection>()
+        services.AddOptions<List<Feature>>()
             .Configure<IEnumerable<IFeatureFilterParser>, IConfiguration>((features, filterParsers, configuration) =>
             {
                 filterParsers = filterParsers.Reverse().ToList(); // filters added last should be tried first
                 configuration = configuration.GetSection(sectionName);
                 foreach (var section in configuration.GetChildren())
                 {
-                    const string providerName = "Configuration";
                     var featureName = section.Key;
 
-                    if (features.Contains(featureName))
+                    if (features.Any(f => f.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)))
                     {
                         // skip adding the same feature more than once in case someone calls this method more than once
                         continue;
                     }
 
                     var enabled = section.GetValue<bool?>("Enabled") ?? true;
+                    if (!enabled)
+                    {
+                        continue;
+                    }
+
                     var salt = section.GetValue<string?>("Salt");
                     var filters = LoadFilters(filterParsers, section.GetSection("Filters"));
-                    var variants = LoadVariants(filterParsers, section.GetSection("Variants"));
+                    var variants = LoadVariants(filterParsers, salt ?? featureName, section.GetSection("Variants"));
 
                     var feature = new Feature
                     {
                         Name = featureName,
-                        ProviderName = providerName,
-                        Enabled = enabled,
-                        Salt = salt!, // internally salt can be null
                     };
-                    feature.Filters.AddRange(filters);
-                    feature.Variants.AddRange(variants);
+
+                    feature.AddRange(variants);
+
+                    foreach (var variant in feature)
+                    {
+                        variant.Filters = variant.Filters.Concat(filters);
+                    }
+
 
                     features.Add(feature);
                 }
             });
     }
 
-    private static IEnumerable<Variant> LoadVariants(IEnumerable<IFeatureFilterParser> filterParsers, IConfiguration variantsConfiguration)
+    private static IEnumerable<Variant> LoadVariants(IEnumerable<IFeatureFilterParser> filterParsers, string salt, IConfiguration variantsConfiguration)
     {
         foreach (var section in variantsConfiguration.GetChildren())
         {
             var variantId = section.Key;
+            var allocationUnit = section.GetValue<string?>("AllocationUnit")?.Trim() ?? "UserId";
             var allocationString = section.GetValue<string?>("Allocation")?.Trim();
             if (!Range<double>.TryParse(allocationString, null, out var range))
             {
@@ -97,67 +107,56 @@ public static class FeatureConfigurationExtensions
             var variant = new Variant
             {
                 Id = variantId,
-                Allocation = allocation,
                 Configuration = configuration,
-                Priority = priority,
+                Priority = priority ?? 0,
             };
-            variant.Filters.AddRange(filters);
+            variant.Filters = [
+                new AllocationFilteringCondition(allocationUnit, $"{ProviderName}_{salt}", XxHashAllocation.Instance, allocation),
+                ..filters
+            ];
 
             yield return variant;
         }
     }
-    private static IEnumerable<Filter> LoadFilters(IEnumerable<IFeatureFilterParser> filterParsers, IConfiguration filtersConfiguration)
+    private static IEnumerable<IFilteringCondition> LoadFilters(IEnumerable<IFeatureFilterParser> filterParsers, IConfiguration filtersConfiguration)
     {
         foreach (var section in filtersConfiguration.GetChildren())
         {
             var propertyName = section.Key;
 
-            IEnumerable<IFilteringCondition>? filteringConditions = null;
+            IFilteringCondition? filteringCondition = null;
 
             var children = section.GetChildren();
             if (children.FirstOrDefault() is IConfigurationSection child && child.Key == "0")
             {
                 // this is an array, thus we must parse values within to get OR treatment
-                filteringConditions = children.Select(c => ParseFilter(filterParsers, c))
-                    .Where(f => f != null).Cast<IFilteringCondition>();
+                filteringCondition = new OrFilteringCondition(children.Select(c => ParseFilter(filterParsers, propertyName, c))
+                    .Where(f => f != null).Cast<IFilteringCondition>().ToArray());
             }
 
-            if (filteringConditions == null)
+            if (filteringCondition == null)
             {
                 // this is a single value, let's try to parse it
-                var filteringCondition = ParseFilter(filterParsers, section);
-                if (filteringCondition != null)
-                {
-                    filteringConditions = new[] { filteringCondition };
-                }
+                filteringCondition = ParseFilter(filterParsers, propertyName, section);
             }
 
             // if no condition was parsed we will prevent running this filter
-            if (filteringConditions != null)
+            if (filteringCondition != null)
             {
-                var filter = new Filter
-                {
-                    PropertyName = propertyName,
-                };
-                filter.Conditions.AddRange(filteringConditions);
-                yield return filter;
+                yield return filteringCondition;
             }
             else
             {
-                yield return new Filter
-                {
-                    PropertyName = propertyName,
-                    Conditions = { NeverFilteringCondition.Instance }
-                };
+                yield return NeverFilteringCondition.Instance;
             }
         }
     }
 
-    private static IFilteringCondition? ParseFilter(IEnumerable<IFeatureFilterParser> filterParsers, IConfiguration configuration)
+    private static IFilteringCondition? ParseFilter(IEnumerable<IFeatureFilterParser> filterParsers, string propertyName, IConfiguration configuration)
     {
         foreach (var parser in filterParsers)
         {
-            if (parser.TryParseFilter(configuration, out var filteringCondition))
+            if (parser.TryParseFilter(propertyName, configuration, out var filteringCondition))
             {
                 return filteringCondition;
             }

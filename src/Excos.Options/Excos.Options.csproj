@@ -28,11 +28,11 @@
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.6.0-rtm.24311.4,9.0.0)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

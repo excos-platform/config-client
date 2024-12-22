@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 
 using Excos.Options.Abstractions;
+using Microsoft.Extensions.Options.Contextual;
 
 namespace Excos.Options.Filtering;
 
@@ -18,5 +19,5 @@ public class NeverFilteringCondition : IFilteringCondition
     public static NeverFilteringCondition Instance { get; } = new();
 
     /// <inheritdoc/>
-    public bool IsSatisfiedBy<T>(T value) => false;
+    public bool IsSatisfiedBy<T>(T value) where T : IOptionsContext => false;
 }

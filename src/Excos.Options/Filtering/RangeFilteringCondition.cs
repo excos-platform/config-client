@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0
 
 using System.Runtime.CompilerServices;
-using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 
 namespace Excos.Options.Filtering;
@@ -11,7 +10,7 @@ namespace Excos.Options.Filtering;
 /// A filtering condition that checks if a value is within a specified range.
 /// </summary>
 /// <typeparam name="F">Type of the range.</typeparam>
-public class RangeFilteringCondition<F> : IFilteringCondition
+internal class RangeFilteringCondition<F> : PropertyFilteringCondition
     where F : IComparable<F>, ISpanParsable<F>
 {
     private readonly Range<F> _range;
@@ -19,14 +18,15 @@ public class RangeFilteringCondition<F> : IFilteringCondition
     /// <summary>
     /// Creates a new filtering condition that checks if a value is within a specified range.
     /// </summary>
+    /// <param name="propertyName">Property name.</param>
     /// <param name="range">Range to check.</param>
-    public RangeFilteringCondition(Range<F> range)
+    public RangeFilteringCondition(string propertyName, Range<F> range) : base(propertyName)
     {
         _range = range;
     }
 
     /// <inheritdoc/>
-    public bool IsSatisfiedBy<T>(T value)
+    protected override bool PropertyPredicate<T>(T value)
     {
         if (typeof(T) == typeof(F))
         {
