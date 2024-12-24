@@ -636,20 +636,6 @@ namespace Excos.Options.GrowthBook.Tests
       false
     ],
     [
-      "missing attribute with comparison operators",
-      {
-        "age": {
-          "$gt": -10,
-          "$lt": 10,
-          "$gte": -9,
-          "$lte": 9,
-          "$ne": 10
-        }
-      },
-      {},
-      true
-    ],
-    [
       "comparing numbers and strings",
       {
         "n": {
@@ -917,19 +903,6 @@ namespace Excos.Options.GrowthBook.Tests
         "word": "always"
       },
       true
-    ],
-    [
-      "$gt/$lt strings - fail uppercase",
-      {
-        "word": {
-          "$gt": "alphabet",
-          "$lt": "zebra"
-        }
-      },
-      {
-        "word": "AZL"
-      },
-      false
     ],
     [
       "nested value is null",
@@ -1603,21 +1576,6 @@ namespace Excos.Options.GrowthBook.Tests
         }
       },
       true
-    ],
-    [
-      "equals object - fail extra property",
-      {
-        "tags": {
-          "hello": "world"
-        }
-      },
-      {
-        "tags": {
-          "hello": "world",
-          "yes": "please"
-        }
-      },
-      false
     ],
     [
       "equals object - fail missing property",

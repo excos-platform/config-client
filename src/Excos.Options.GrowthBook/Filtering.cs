@@ -534,7 +534,7 @@ internal class AllFilter : IFilter
                 bool any = false;
                 foreach (var elem in context.EnumerateArray())
                 {
-                    if (!condition.IsSatisfied(elem))
+                    if (condition.IsSatisfied(elem))
                     {
                         any = true;
                     }
@@ -544,6 +544,8 @@ internal class AllFilter : IFilter
                     return false;
                 }
             }
+
+            return true;
         }
 
         return false;
@@ -596,6 +598,7 @@ internal class TypeFilter : IFilter
             JsonValueKind.Null => _type == "null",
             JsonValueKind.Object => _type == "object",
             JsonValueKind.Array => _type == "array",
+            JsonValueKind.Undefined=> _type == "undefined",
             _ => false,
         };
     }

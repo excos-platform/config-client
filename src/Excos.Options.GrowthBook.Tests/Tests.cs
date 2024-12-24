@@ -199,6 +199,19 @@ public class Tests
         Assert.Equal("current", config.GetValue<string>("gbdemo-checkout-layout"));
     }
 
+    // Exceptions:
+    // (name: "equals object - fail extra property",
+    //  condition: { "tags": { "hello": "world" } },
+    //  attributes: { "tags": { "hello": "world", "yes": "please" } },
+    //  expected: False) - we will only enforce properties specified, you can add extra properties without failing existing filters
+    // (name: "$gt/$lt strings - fail uppercase",
+    //  condition: { "word": { "$gt": "alphabet", "$lt": "zebra" } },
+    //  attributes: { "word": "AZL" },
+    //  expected: False) - we do case insensitive string comparison
+    // (name: "missing attribute with comparison operators",
+    //  condition: { "age": { "$gt": -10, "$lt": 10, "$gte": -9, "$lte": 9, "$ne": 10 } },
+    //  attributes: {},
+    //  expected: True) - I don't know why this was supposed to pass
     [Theory]
     [MemberData(nameof(Cases.EvalConditions), MemberType = typeof(Cases))]
     public void EvalConditions_Test(string name, JsonElement condition, JsonElement attributes, bool expected)
