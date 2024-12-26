@@ -260,7 +260,7 @@ public class ExperimentationService : IExperimentationService
                 assignment = new ExperimentationAssignment
                 {
                     SessionId = context.SessionId,
-                    VariantId = variantId
+                    VariantId = variant.Id
                 };
 
                 _dbContext.Assignments.Add(assignment);
