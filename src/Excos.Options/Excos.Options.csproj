@@ -15,11 +15,11 @@
 
     <PropertyGroup>
         <PackageId>Excos.Options</PackageId>
-        <Version>1.0.0-alpha2</Version>
+        <Version>1.0.0-beta1</Version>
         <Authors>Marian Dziubiak and Contributors</Authors>
         <Description>Excos.Options provides a feature/experiment management system on top of Options.Contextual</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/manio143/excos</RepositoryUrl>
+        <RepositoryUrl>https://github.com/excos-platform/config-client</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
@@ -28,11 +28,11 @@
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.6.0-rtm.24311.4,9.0.0)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

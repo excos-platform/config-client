@@ -1,6 +1,8 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using Microsoft.Extensions.Options.Contextual;
+
 namespace Excos.Options.Abstractions;
 
 /// <summary>
@@ -9,13 +11,11 @@ namespace Excos.Options.Abstractions;
 public interface IFilteringCondition
 {
     /// <summary>
-    /// Checks whether the provided value satisfies a filtering condition.
+    /// Checks whether the provided context satisfies a filtering condition.
     /// </summary>
-    /// <remarks>
-    /// Implementer may choose what types <typeparamref name="T"/> it supports and return false for all other ones.
-    /// </remarks>
     /// <param name="value">Value.</param>
-    /// <typeparam name="T">Type of the value.</typeparam>
+    /// <typeparam name="TContext">Context type.</typeparam>
     /// <returns>True if condition is satisfied, false otherwise.</returns>
-    bool IsSatisfiedBy<T>(T value);
+    bool IsSatisfiedBy<TContext>(TContext value)
+        where TContext : IOptionsContext;
 }

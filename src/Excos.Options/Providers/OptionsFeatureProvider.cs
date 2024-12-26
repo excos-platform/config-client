@@ -9,9 +9,9 @@ namespace Excos.Options.Providers;
 
 internal class OptionsFeatureProvider : IFeatureProvider
 {
-    private readonly IOptionsMonitor<FeatureCollection> _options;
+    private readonly IOptionsMonitor<List<Feature>> _options;
 
-    public OptionsFeatureProvider(IOptionsMonitor<FeatureCollection> options)
+    public OptionsFeatureProvider(IOptionsMonitor<List<Feature>> options)
     {
         _options = options;
     }

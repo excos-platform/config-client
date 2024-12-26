@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
+using Excos.Options.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -17,17 +18,19 @@ namespace Excos.Options.Providers;
 /// </summary>
 public sealed class OptionsFeatureBuilder
 {
-    private readonly OptionsBuilder<FeatureCollection> _optionsBuilder;
+    private readonly OptionsBuilder<List<Feature>> _optionsBuilder;
 
     internal Feature Feature { get; }
+    internal string ProviderName { get; }
+    internal List<IFilteringCondition> Filters { get; } = [];
 
-    internal OptionsFeatureBuilder(OptionsBuilder<FeatureCollection> optionsBuilder, string featureName, string providerName)
+    internal OptionsFeatureBuilder(OptionsBuilder<List<Feature>> optionsBuilder, string featureName, string providerName)
     {
         _optionsBuilder = optionsBuilder;
+        ProviderName = providerName;
         Feature = new Feature
         {
             Name = featureName,
-            ProviderName = providerName,
         };
     }
 
@@ -35,8 +38,14 @@ public sealed class OptionsFeatureBuilder
     /// Saves the feature to the collection.
     /// </summary>
     /// <returns>Options builder for further method chaining.</returns>
-    public OptionsBuilder<FeatureCollection> Save() =>
-        _optionsBuilder.Configure(features => features.Add(Feature));
+    public OptionsBuilder<List<Feature>> Save()
+    {
+        foreach (var variant in Feature)
+        {
+            variant.Filters = variant.Filters.Concat(Filters).ToList();
+        }
+        return _optionsBuilder.Configure(features => features.Add(Feature));
+    }
 }
 
 /// <summary>
@@ -44,17 +53,14 @@ public sealed class OptionsFeatureBuilder
 /// </summary>
 public sealed class OptionsFeatureFilterBuilder
 {
+    internal string PropertyName { get; }
     internal OptionsFeatureBuilder FeatureBuilder { get; }
-
-    internal Filter Filter { get; }
+    internal List<IFilteringCondition> Filter { get; } = [];
 
     internal OptionsFeatureFilterBuilder(OptionsFeatureBuilder featureBuilder, string propertyName)
     {
         FeatureBuilder = featureBuilder;
-        Filter = new Filter
-        {
-            PropertyName = propertyName,
-        };
+        PropertyName = propertyName;
     }
 
     /// <summary>
@@ -63,7 +69,12 @@ public sealed class OptionsFeatureFilterBuilder
     /// <returns>Feature builder for further method chaining.</returns>
     public OptionsFeatureBuilder SaveFilter()
     {
-        FeatureBuilder.Feature.Filters.Add(Filter);
+        FeatureBuilder.Filters.Add(Filter.Count == 0
+            ? NeverFilteringCondition.Instance
+            : Filter.Count == 1
+                ? Filter[0]
+                : new OrFilteringCondition(Filter.ToArray()));
+
         return FeatureBuilder;
     }
 }
@@ -104,7 +115,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     {
         services.AddExcosOptionsFeatureProvider();
         return new OptionsFeatureBuilder(
-            services.AddOptions<FeatureCollection>(),
+            services.AddOptions<List<Feature>>(),
             featureName,
             providerName);
     }
@@ -115,7 +126,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="optionsBuilder">Options builder.</param>
     /// <param name="featureName">Feature name.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder BuildFeature(this OptionsBuilder<FeatureCollection> optionsBuilder, string featureName) =>
+    public static OptionsFeatureBuilder BuildFeature(this OptionsBuilder<List<Feature>> optionsBuilder, string featureName) =>
         optionsBuilder.BuildFeature(featureName, Assembly.GetCallingAssembly().GetName()?.Name ?? nameof(OptionsFeatureBuilder));
 
     /// <summary>
@@ -125,7 +136,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="featureName">Feature name.</param>
     /// <param name="providerName">Provider name.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder BuildFeature(this OptionsBuilder<FeatureCollection> optionsBuilder, string featureName, string providerName)
+    public static OptionsFeatureBuilder BuildFeature(this OptionsBuilder<List<Feature>> optionsBuilder, string featureName, string providerName)
     {
         optionsBuilder.Services.AddExcosOptionsFeatureProvider();
         return new OptionsFeatureBuilder(optionsBuilder, featureName, providerName);
@@ -167,7 +178,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <returns>Builder.</returns>
     public static OptionsFeatureFilterBuilder Matches(this OptionsFeatureFilterBuilder builder, string value)
     {
-        builder.Filter.Conditions.Add(new StringFilteringCondition(value));
+        builder.Filter.Add(new StringFilteringCondition(builder.PropertyName, value));
         return builder;
     }
 
@@ -179,7 +190,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <returns>Builder.</returns>
     public static OptionsFeatureFilterBuilder RegexMatches(this OptionsFeatureFilterBuilder builder, string pattern)
     {
-        builder.Filter.Conditions.Add(new RegexFilteringCondition(pattern));
+        builder.Filter.Add(new RegexFilteringCondition(builder.PropertyName, pattern));
         return builder;
     }
 
@@ -192,7 +203,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     public static OptionsFeatureFilterBuilder InRange<T>(this OptionsFeatureFilterBuilder builder, Range<T> range)
         where T : IComparable<T>, ISpanParsable<T>
     {
-        builder.Filter.Conditions.Add(new RangeFilteringCondition<T>(range));
+        builder.Filter.Add(new RangeFilteringCondition<T>(builder.PropertyName, range));
         return builder;
     }
 
@@ -203,19 +214,32 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="optionsFeatureBuilder">Builder.</param>
     /// <param name="configureA">Configuration callback taking the options object and section name (variant A).</param>
     /// <param name="configureB">Configuration callback taking the options object and section name (variant B).</param>
+    /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder ABExperiment<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, Action<TOptions, string> configureA, Action<TOptions, string> configureB)
+    public static OptionsFeatureBuilder ABExperiment<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, Action<TOptions, string> configureA, Action<TOptions, string> configureB, string allocationUnit = "UserId")
     {
-        optionsFeatureBuilder.Feature.Variants.Add(new Variant
+        optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = "A",
-            Allocation = new Allocation(new Range<double>(0, 0.5, RangeType.IncludeStart)),
+            Id = $"{optionsFeatureBuilder.Feature.Name}:A_{optionsFeatureBuilder.Feature.Count}",
+            Filters = [
+                new AllocationFilteringCondition(
+                    allocationUnit,
+                    $"{optionsFeatureBuilder.ProviderName}_{optionsFeatureBuilder.Feature.Name}",
+                    XxHashAllocation.Instance,
+                    new Allocation(new Range<double>(0, 0.5, RangeType.IncludeStart)))
+                ],
             Configuration = new CallbackConfigureOptions<TOptions>(configureA),
         });
-        optionsFeatureBuilder.Feature.Variants.Add(new Variant
+        optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = "B",
-            Allocation = new Allocation(new Range<double>(0.5, 1, RangeType.IncludeBoth)),
+            Id = $"{optionsFeatureBuilder.Feature.Name}:B_{optionsFeatureBuilder.Feature.Count}",
+            Filters = [
+                new AllocationFilteringCondition(
+                    allocationUnit,
+                    $"{optionsFeatureBuilder.ProviderName}_{optionsFeatureBuilder.Feature.Name}",
+                    XxHashAllocation.Instance,
+                    new Allocation(new Range<double>(0.5, 1, RangeType.IncludeBoth)))
+                ],
             Configuration = new CallbackConfigureOptions<TOptions>(configureB),
         });
 
@@ -229,13 +253,20 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="optionsFeatureBuilder">Builder.</param>
     /// <param name="percentage">Rollout percentage (0-100%)</param>
     /// <param name="configure">Configuration callback taking the options object and section name.</param>
+    /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder Rollout<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, double percentage, Action<TOptions, string> configure)
+    public static OptionsFeatureBuilder Rollout<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, double percentage, Action<TOptions, string> configure, string allocationUnit = "UserId")
     {
-        optionsFeatureBuilder.Feature.Variants.Add(new Variant
+        optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = "Rollout",
-            Allocation = Allocation.Percentage(percentage),
+            Id = $"{optionsFeatureBuilder.Feature.Name}:Rollout_{optionsFeatureBuilder.Feature.Count}",
+            Filters = [
+                new AllocationFilteringCondition(
+                    allocationUnit,
+                    $"{optionsFeatureBuilder.ProviderName}_{optionsFeatureBuilder.Feature.Name}",
+                    XxHashAllocation.Instance, 
+                    Allocation.Percentage(percentage))
+                ],
             Configuration = new CallbackConfigureOptions<TOptions>(configure),
         });
 

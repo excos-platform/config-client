@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using Excos.Options.Abstractions;
-
 namespace Excos.Options.Filtering;
 
 /// <summary>
@@ -11,21 +9,22 @@ namespace Excos.Options.Filtering;
 /// <remarks>
 /// Matching is case-insensitive and culture-invariant.
 /// </remarks>
-public class StringFilteringCondition : IFilteringCondition
+internal class StringFilteringCondition : PropertyFilteringCondition
 {
     private readonly string _source;
 
     /// <summary>
     /// Creates a new instance of the filter using the <paramref name="source"/> string.
     /// </summary>
+    /// <param name="propertyName">Property name.</param>
     /// <param name="source">String to match.</param>
-    public StringFilteringCondition(string source)
+    public StringFilteringCondition(string propertyName, string source) : base(propertyName)
     {
         _source = source;
     }
 
     /// <inheritdoc/>
-    public bool IsSatisfiedBy<T>(T value)
+    protected override bool PropertyPredicate<T>(T value)
     {
         return string.Equals(value?.ToString(), _source, StringComparison.InvariantCultureIgnoreCase);
     }

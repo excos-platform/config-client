@@ -11,7 +11,7 @@ namespace Excos.Options.Providers.Configuration.FilterParsers;
 
 internal class StringFilterParser : IFeatureFilterParser
 {
-    public bool TryParseFilter(IConfiguration configuration, [NotNullWhen(true)] out IFilteringCondition? filteringCondition)
+    public bool TryParseFilter(string propertyName, IConfiguration configuration, [NotNullWhen(true)] out IFilteringCondition? filteringCondition)
     {
         var pattern = configuration.Get<string?>();
         if (pattern == null)
@@ -22,17 +22,17 @@ internal class StringFilterParser : IFeatureFilterParser
 
         if (pattern.StartsWith('^'))
         {
-            filteringCondition = new RegexFilteringCondition(pattern);
+            filteringCondition = new RegexFilteringCondition(propertyName, pattern);
             return true;
         }
         else if (pattern.Contains('*'))
         {
-            filteringCondition = new RegexFilteringCondition(Regex.Escape(pattern).Replace("\\*", ".*"));
+            filteringCondition = new RegexFilteringCondition(propertyName, Regex.Escape(pattern).Replace("\\*", ".*"));
             return true;
         }
         else
         {
-            filteringCondition = new StringFilteringCondition(pattern);
+            filteringCondition = new StringFilteringCondition(propertyName, pattern);
             return true;
         }
     }

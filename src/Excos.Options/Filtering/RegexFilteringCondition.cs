@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0
 
 using System.Text.RegularExpressions;
-using Excos.Options.Abstractions;
 
 namespace Excos.Options.Filtering;
 
@@ -12,21 +11,22 @@ namespace Excos.Options.Filtering;
 /// <remarks>
 /// Matching is case-insensitive and culture-invariant.
 /// </remarks>
-public class RegexFilteringCondition : IFilteringCondition
+internal class RegexFilteringCondition : PropertyFilteringCondition
 {
     private readonly Regex _regex;
 
     /// <summary>
     /// Creates a new instance of the filter using the Regex <paramref name="expression"/>.
     /// </summary>
+    /// <param name="propertyName">Property name.</param>
     /// <param name="expression">Regular expression acceptable by <see cref="Regex"/>.</param>
-    public RegexFilteringCondition(string expression)
+    public RegexFilteringCondition(string propertyName, string expression) : base(propertyName)
     {
         _regex = new Regex(expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 
     /// <inheritdoc/>
-    public bool IsSatisfiedBy<T>(T value)
+    protected override bool PropertyPredicate<T>(T value)
     {
         return _regex.IsMatch(value?.ToString() ?? string.Empty);
     }

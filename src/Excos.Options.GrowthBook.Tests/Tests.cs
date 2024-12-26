@@ -1,6 +1,7 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.Text.Json;
 using Excos.Options.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -177,15 +178,10 @@ public class Tests
         Assert.Equal(3, features.Count);
 
         Assert.Equal("newlabel", features[0].Name);
-        Assert.Equal(2, features[0].Variants.Count);
-        Assert.Equal("label:0", features[0].Variants[0].Id);
-        Assert.Equal("label:1", features[0].Variants[1].Id);
-        Assert.Equal(2, features[0].Variants[0].Filters.Count);
-        Assert.True(features[0].Variants[0].Filters.Contains("country"));
-        Assert.Equal("country", features[0].Variants[0].Filters["country"].PropertyName);
-        var inFilter = Assert.IsType<InFilter>(Assert.Single(features[0].Variants[0].Filters["country"].Conditions));
-        Assert.True(inFilter.IsSatisfiedBy("US"));
-        Assert.True(inFilter.IsSatisfiedBy("UK"));
+        Assert.Equal(2, features[0].Count);
+        Assert.Equal("label:0", features[0][0].Id);
+        Assert.Equal("label:1", features[0][1].Id);
+        Assert.Equal(3, features[0][0].Filters.Count()); // attribute filter + allocation + namespace
 
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
 
@@ -203,13 +199,27 @@ public class Tests
         Assert.Equal("current", config.GetValue<string>("gbdemo-checkout-layout"));
     }
 
-    // These tests seem to be using a different format to what the API returns...
-    //[Theory]
-    //[MemberData(nameof(Cases.EvalConditions), MemberType = typeof(Cases))]
-    //public void EvalConditions_Test(string name, JsonElement condition, JsonElement attributes, bool expected)
-    //{
-    //    var filter = FilterParser.ParseFilters(condition);
-    //}
+    // Exceptions:
+    // (name: "equals object - fail extra property",
+    //  condition: { "tags": { "hello": "world" } },
+    //  attributes: { "tags": { "hello": "world", "yes": "please" } },
+    //  expected: False) - we will only enforce properties specified, you can add extra properties without failing existing filters
+    // (name: "$gt/$lt strings - fail uppercase",
+    //  condition: { "word": { "$gt": "alphabet", "$lt": "zebra" } },
+    //  attributes: { "word": "AZL" },
+    //  expected: False) - we do case insensitive string comparison
+    // (name: "missing attribute with comparison operators",
+    //  condition: { "age": { "$gt": -10, "$lt": 10, "$gte": -9, "$lte": 9, "$ne": 10 } },
+    //  attributes: {},
+    //  expected: True) - I don't know why this was supposed to pass
+    [Theory]
+    [MemberData(nameof(Cases.EvalConditions), MemberType = typeof(Cases))]
+    public void EvalConditions_Test(string name, JsonElement condition, JsonElement attributes, bool expected)
+    {
+        _ = name; // get compiler off my back
+       var filter = FilterParser.ParseCondition(condition);
+       Assert.Equal(expected, filter.IsSatisfied(attributes));
+    }
 
     [Theory]
     [MemberData(nameof(Cases.Hash), MemberType = typeof(Cases))]
@@ -220,13 +230,25 @@ public class Tests
         Assert.Equal(result, hash == -1 ? null : hash);
     }
 
+    // Exceptions:
+    // ["gt", "1.2.3-5-foo", "1.2.3-5-Foo", true] - because I do case insensitive compare
+    // ["gt, "1.2.3-r100", "1.2.3-R2", true], - because I do case insensitive compare
     [Theory]
-    [MemberData(nameof(Cases.VersionCompareEQ), MemberType = typeof(Cases))]
-    public void VersionCompareEQ_Test(string left, string right, bool match)
+    [MemberData(nameof(Cases.VersionCompare), MemberType = typeof(Cases))]
+    public void VersionCompare_Test(string op, string left, string right, bool match)
     {
-        Assert.True(ComparisonVersionStringFilter.TryParse(left, out var version));
-        var algorithm = new ComparisonVersionStringFilter(i => i == 0, version);
-        Assert.Equal(match, algorithm.IsSatisfiedBy(right));
+        var comparisonType = op switch
+        {
+            "eq" => ComparisonType.Equal,
+            "ne" => ComparisonType.NotEqual,
+            "lt" => ComparisonType.LessThan,
+            "lte" => ComparisonType.LessThanOrEqual,
+            "gt" => ComparisonType.GreaterThan,
+            "gte" => ComparisonType.GreaterThanOrEqual,
+            _ => throw new Exception(op)
+        };
+        var algorithm = new ComparisonVersionStringFilter(comparisonType, right);
+        Assert.Equal(match, algorithm.IsSatisfied(JsonSerializer.SerializeToElement(left)));
     }
 
     private IHost BuildHost(GrowthBookOptions options)

@@ -70,7 +70,7 @@ public class PrivatePoolGenerator : IIncrementalGenerator
         title: nameof(PooledTypeCannotBeStatic),
         messageFormat: "Pooled type {0} cannot be static to make use of object pooling.",
         category: Category,
-        DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static DiagnosticDescriptor PooledTypeMustBePartial { get; } = new DiagnosticDescriptor(
@@ -78,7 +78,7 @@ public class PrivatePoolGenerator : IIncrementalGenerator
         title: nameof(PooledTypeMustBePartial),
         messageFormat: "Pooled type {0} must be partial to inject pooling methods.",
         category: Category,
-        DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     private static IEnumerable<PrivatePooledType> GetPrivatePoolTypes(Dictionary<INamedTypeSymbol, List<TypeDeclarationSyntax>> types) =>

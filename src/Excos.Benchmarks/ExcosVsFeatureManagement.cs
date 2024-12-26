@@ -3,11 +3,9 @@
 
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using Excos.Options.Abstractions;
-using Excos.Options.Abstractions.Data;
+using Excos.Options;
 using Excos.Options.Contextual;
 using Excos.Options.Providers;
-using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options.Contextual;
@@ -31,21 +29,12 @@ public class ExcosVsFeatureManagement
         var services = new ServiceCollection();
         services.ConfigureExcos<TestOptions>("Test");
         services.AddExcosOptionsFeatureProvider();
-        services.AddOptions<FeatureCollection>()
-        .Configure(features => features.Add(new Feature
-        {
-            Name = "TestFeature",
-            ProviderName = "Tests",
-            Variants =
+        services.BuildFeature("TestFeature", "Tests")
+            .Rollout<TestOptions>(100, (options, name) =>
             {
-                new Variant
-                {
-                    Allocation = Allocation.Percentage(100),
-                    Configuration = new BasicConfigureOptions(),
-                    Id = "Basic"
-                }
-            }
-        }));
+                options.Setting = "Test";
+            })
+            .Save();
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = false, ValidateOnBuild = false });
     }
@@ -96,20 +85,18 @@ public class ExcosVsFeatureManagement
     }
 
     [Benchmark]
-    public async Task<string> GetExcosSettingsPooled()
+    public async Task<string> GetExcosSettingsContextual()
     {
-        PrivateObjectPool.EnablePooling = true;
         var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions, TestContext>>();
         var options = await contextualOptions.GetAsync(new TestContext(), default);
         return options.Setting;
     }
 
     [Benchmark]
-    public async Task<string> GetExcosSettingsNew()
+    public async Task<string> GetExcosSettingsFeatureEvaluation()
     {
-        PrivateObjectPool.EnablePooling = false;
-        var contextualOptions = _excosProvider.GetRequiredService<IContextualOptions<TestOptions, TestContext>>();
-        var options = await contextualOptions.GetAsync(new TestContext(), default);
+        var eval = _excosProvider.GetRequiredService<IFeatureEvaluation>();
+        var options = await eval.EvaluateFeaturesAsync<TestOptions, TestContext>(string.Empty, new TestContext(), default);
         return options.Setting;
     }
 
@@ -127,17 +114,6 @@ public class ExcosVsFeatureManagement
     private class TestOptions
     {
         public string Setting { get; set; } = string.Empty;
-    }
-
-    private class BasicConfigureOptions : IConfigureOptions
-    {
-        public void Configure<TOptions>(TOptions input, string section) where TOptions : class
-        {
-            if (input is TestOptions test)
-            {
-                test.Setting = "Test";
-            }
-        }
     }
 }
 

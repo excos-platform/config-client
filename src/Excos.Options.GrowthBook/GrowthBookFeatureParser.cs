@@ -2,8 +2,8 @@
 // Licensed under the Apache License, Version 2.0
 
 using System.Text.Json;
+using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
-using Excos.Options.Utils;
 using static Excos.Options.GrowthBook.JsonConfigureOptions;
 
 namespace Excos.Options.GrowthBook
@@ -21,38 +21,37 @@ namespace Excos.Options.GrowthBook
                 var feature = new Feature
                 {
                     Name = gbFeature.Key,
-                    ProviderName = nameof(GrowthBook),
-                    Salt = gbFeature.Key,
                 };
 
                 var ruleIdx = 0;
                 foreach (var rule in gbFeature.Value.Rules)
                 {
                     var namespaceId = rule.Namespace.ValueKind == JsonValueKind.Array ? rule.Namespace[0].GetString() : null;
-                    var namespaceRange = namespaceId is not null ? new Range<double>(rule.Namespace[1].GetDouble(), rule.Namespace[2].GetDouble(), RangeType.IncludeBoth) : (Range<double>?)null;
+                    var namespaceRange = namespaceId is not null ? new Range<double>(rule.Namespace[1].GetDouble(), rule.Namespace[2].GetDouble(), RangeType.IncludeBoth) : new Range<double>();
 
-                    var filters = FilterParser.ParseFilters(rule.Condition);
+                    var filters = new List<IFilteringCondition> { FilterParser.ParseFilters(rule.Condition) };
                     if (namespaceId is not null)
                     {
-                        filters[rule.HashAttribute] = filters.TryGetValue(rule.HashAttribute, out var filter)
-                            ? new NamespaceInclusiveFilter(namespaceId, namespaceRange!.Value, filter)
-                            : new NamespaceInclusiveFilter(namespaceId, namespaceRange!.Value, null);
+                        filters.Add(new NamespaceFilteringCondition(rule.HashAttribute, namespaceId, namespaceRange));
                     }
 
                     if (rule.Force.ValueKind != JsonValueKind.Undefined)
                     {
+                        var allocationFilter = new AllocationFilteringCondition(
+                                rule.HashAttribute,
+                                rule.Seed ?? rule.Key ?? gbFeature.Key,
+                                rule.HashVersion == 1 ? GrowthBookHash.V1 : GrowthBookHash.V2,
+                                Allocation.Percentage(rule.Coverage * 100)
+                            );
+                        filters.Add(allocationFilter);
                         var variant = new Variant
                         {
-                            Id = $":{ruleIdx}",
-                            Allocation = Allocation.Percentage(rule.Coverage * 100),
+                            Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
                             Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
                             Priority = ruleIdx,
-                            AllocationUnit = rule.HashAttribute,
-                            AllocationSalt = rule.Seed ?? rule.Key,
-                            AllocationHash = rule.HashVersion == 1 ? GrowthBookHash.V1 : GrowthBookHash.V2,
                         };
-                        variant.Filters.AddRange(filters.Select(kvp => new Filter { PropertyName = kvp.Key, Conditions = { kvp.Value } }));
-                        feature.Variants.Add(variant);
+                        variant.Filters = filters;
+                        feature.Add(variant);
                     }
                     else if (rule.Variations.ValueKind == JsonValueKind.Array && rule.Weights != null)
                     {
@@ -67,18 +66,21 @@ namespace Excos.Options.GrowthBook
                                 RangeType.IncludeBoth);
                             allocationRangeStart += rule.Weights[i];
 
+                            var allocationFilter = new AllocationFilteringCondition(
+                                rule.HashAttribute,
+                                rule.Seed ?? rule.Key ?? gbFeature.Key,
+                                rule.HashVersion == 1 ? GrowthBookHash.V1 : GrowthBookHash.V2,
+                                new Allocation(allocation)
+                            );
                             var variant = new Variant
                             {
                                 Id = $"{rule.Key}:{meta?.Key ?? i.ToString()}",
-                                Allocation = new Allocation(allocation),
                                 Configuration = new JsonConfigureOptions(gbFeature.Key, variation),
                                 Priority = ruleIdx,
-                                AllocationUnit = rule.HashAttribute,
-                                AllocationSalt = rule.Seed ?? rule.Key,
-                                AllocationHash = rule.HashVersion == 1 ? GrowthBookHash.V1 : GrowthBookHash.V2,
                             };
-                            variant.Filters.AddRange(filters.Select(kvp => new Filter { PropertyName = kvp.Key, Conditions = { kvp.Value } }));
-                            feature.Variants.Add(variant);
+                            // copy filters to allow outer collection reuse
+                            variant.Filters = new List<IFilteringCondition>(filters) { allocationFilter };
+                            feature.Add(variant);
                         }
                     }
 

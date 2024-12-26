@@ -85,7 +85,7 @@ namespace Excos.Options.GrowthBook
 
                 _cacheExpiration = DateTimeOffset.UtcNow + _options.CurrentValue.CacheDuration;
 
-                _logger.LogInformation("Loaded the following GrowthBook features: {features}", _cachedFeatures.Select(static f => $"{f.Name}[${f.Variants.Count}]"));
+                _logger.LogInformation("Loaded the following GrowthBook features: {features}", _cachedFeatures.Select(static f => $"{f.Name}[${f.Count}]"));
             }
             catch (Exception ex)
             {
