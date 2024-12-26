@@ -20,18 +20,5 @@ namespace Excos.Options
         /// <returns>Selected variants.</returns>
         IAsyncEnumerable<Variant> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
             where TContext : IOptionsContext;
-
-        /// <summary>
-        /// Evaluates features for a given context and returns the constructed options object.
-        /// </summary>
-        /// <typeparam name="TOptions">Options type.</typeparam>
-        /// <typeparam name="TContext">Context type.</typeparam>
-        /// <param name="sectionName">The configuration section name corresponding to the path in config under which the options object should be resolved.</param>
-        /// <param name="context">Context.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>An object </returns>
-        ValueTask<TOptions> EvaluateFeaturesAsync<TOptions, TContext>(string sectionName, TContext context, CancellationToken cancellationToken)
-            where TOptions : class, new()
-            where TContext : IOptionsContext;
     }
 }

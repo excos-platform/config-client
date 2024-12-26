@@ -46,7 +46,7 @@ namespace Excos.Options.GrowthBook
                         filters.Add(allocationFilter);
                         var variant = new Variant
                         {
-                            Id = $":{ruleIdx}",
+                            Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
                             Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
                             Priority = ruleIdx,
                         };

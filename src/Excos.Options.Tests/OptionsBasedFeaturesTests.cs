@@ -43,7 +43,7 @@ public class OptionsBasedFeaturesTests
         var variants = provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default).ToEnumerable().ToList();
 
         var metadata = Assert.Single(variants);
-        Assert.Equal("TestFeature_Rollout_1", metadata.Id);
+        Assert.Equal("TestFeature:Rollout_1", metadata.Id);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public class OptionsBasedFeaturesTests
         var variants = provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default).ToEnumerable().ToList();
 
         Assert.Equal(2, variants.Count);
-        Assert.Equal("TestFeature_Rollout_0", variants.ElementAt(0).Id);
-        Assert.Equal("TestExperiment_B_1", variants.ElementAt(1).Id);
+        Assert.Equal("TestFeature:Rollout_0", variants.ElementAt(0).Id);
+        Assert.Equal("TestExperiment:B_1", variants.ElementAt(1).Id);
 
         Assert.Equal("XX", options.Label);
         Assert.Equal(10, options.Length);

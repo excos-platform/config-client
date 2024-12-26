@@ -220,7 +220,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     {
         optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = $"{optionsFeatureBuilder.Feature.Name}_A_{optionsFeatureBuilder.Feature.Count}",
+            Id = $"{optionsFeatureBuilder.Feature.Name}:A_{optionsFeatureBuilder.Feature.Count}",
             Filters = [
                 new AllocationFilteringCondition(
                     allocationUnit,
@@ -232,7 +232,7 @@ public static class OptionsFeatureProviderBuilderExtensions
         });
         optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = $"{optionsFeatureBuilder.Feature.Name}_B_{optionsFeatureBuilder.Feature.Count}",
+            Id = $"{optionsFeatureBuilder.Feature.Name}:B_{optionsFeatureBuilder.Feature.Count}",
             Filters = [
                 new AllocationFilteringCondition(
                     allocationUnit,
@@ -259,7 +259,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     {
         optionsFeatureBuilder.Feature.Add(new Variant
         {
-            Id = $"{optionsFeatureBuilder.Feature.Name}_Rollout_{optionsFeatureBuilder.Feature.Count}",
+            Id = $"{optionsFeatureBuilder.Feature.Name}:Rollout_{optionsFeatureBuilder.Feature.Count}",
             Filters = [
                 new AllocationFilteringCondition(
                     allocationUnit,

@@ -408,7 +408,7 @@ internal static class Comparison
     }
 }
 
-internal class ComparisonVersionStringFilter : IFilter
+internal partial class ComparisonVersionStringFilter : IFilter
 {
     private readonly ComparisonType _comparisonType;
     private readonly string _value;
@@ -431,14 +431,14 @@ internal class ComparisonVersionStringFilter : IFilter
         // Remove build info and leading `v` if any
         // Split version into parts (both core version numbers and pre-release tags)
         // "v1.2.3-rc.1+build123" -> ["1","2","3","rc","1"]
-        var parts = Regex.Replace(version, "(^v|\\+.*$)", "").Split(['.', '-'], StringSplitOptions.None);
+        var parts = ExtraVersionCharsRemovalRegex().Replace(version, "").Split(['.', '-'], StringSplitOptions.None);
 
         var builder = new StringBuilder();
         // Left pad each numeric part with spaces so string comparisons will work ("9">"10", but " 9"<"10")
         int i = 0;
         for (; i < parts.Length; i++)
         {
-            if (Regex.IsMatch(parts[i], "^[0-9]+"))
+            if (StartsWithNumberRegex().IsMatch(parts[i]))
             {
                 var padding = 5 - parts[i].Length;
                 builder.Append(' ', padding > 0 ? padding : 0);
@@ -463,11 +463,16 @@ internal class ComparisonVersionStringFilter : IFilter
         // "~" is the largest ASCII character, so this will make "1.0.0" greater than "1.0.0-beta" for example
         if (i == 3)
         {
-            builder.Append("~");
+            builder.Append('~');
         }
 
         return builder.ToString();
     }
+
+    [GeneratedRegex("(^v|\\+.*$)")]
+    private static partial Regex ExtraVersionCharsRemovalRegex();
+    [GeneratedRegex("^[0-9]+")]
+    private static partial Regex StartsWithNumberRegex();
 }
 
 internal class ElemMatchFilter : IFilter

@@ -108,8 +108,10 @@ Optionally, before integrating with Growthbook, you can test the Excos feature d
 
 ```csharp
 builder.Services.BuildFeature("TestRollout")
-    .Configure(feature => feature.AllocationUnit = nameof(StoreOptionsContext.SessionId))
-    .Rollout<CatalogDisplayOptions>(75 /*percent*/, (options, _) => options.ItemsPerPage = 20)
+    .Rollout<CatalogDisplayOptions>(
+        75 /*percent*/,
+        (options, _) => options.ItemsPerPage = 20,
+        allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```
 
@@ -211,10 +213,6 @@ public class ExperimentationAssignment
 
     [Required]
     [Column(TypeName = "nvarchar(128)")]
-    public string ExperimentName { get; set; }
-
-    [Required]
-    [Column(TypeName = "nvarchar(128)")]
     public string VariantId { get; set; }
 
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
@@ -240,24 +238,34 @@ With that in place we can implement our `ExperimentationService` class which bas
 public class ExperimentationService : IExperimentationService
 {
     private readonly ExperimentationContext _dbContext;
-    public ExperimentationService(ExperimentationContext dbContext) => _dbContext = dbContext;
+    private readonly /*Excos.Options.*/IFeatureEvaluation _featureEvaluation;
 
-    public async Task SaveExperimentAssignmentAsync(Guid sessionId, string experimentName, string variantId)
+    public ExperimentationService(ExperimentationContext dbContext, IFeatureEvaluation featureEvaluation)
     {
+        _dbContext = dbContext;
+        _featureEvaluation = featureEvaluation;
+    }
+
+    public async Task SaveExperimentAssignmentAsync(StoreOptionsContext context)
+    {
+        // check if we already have an assignment for this session
         var assignment = await _dbContext.Assignments
-            .Where(a => a.SessionId == sessionId)
+            .Where(a => a.SessionId == context.SessionId)
             .FirstOrDefaultAsync();
 
         if (assignment == null)
         {
-            assignment = new ExperimentationAssignment
+            await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(context, default(CancellationToken)))
             {
-                SessionId = sessionId,
-                ExperimentName = experimentName,
-                VariantId = variantId
-            };
+                assignment = new ExperimentationAssignment
+                {
+                    SessionId = context.SessionId,
+                    VariantId = variantId
+                };
 
-            _dbContext.Assignments.Add(assignment);
+                _dbContext.Assignments.Add(assignment);
+            }
+
             await _dbContext.SaveChangesAsync();
         }
     }
@@ -291,9 +299,6 @@ With that in place, let's add the experimentation service to Index.cshtml.cs and
 public class CatalogDisplayOptions
 {
     public int ItemsPerPage { get; set; } = Constants.ITEMS_PER_PAGE;
-
-    // Add this field - it will be populated by Excos
-    public FeatureMetadata? FeatureMetadata { get; set; }
 }
 
 // Index.cshtml.cs
@@ -302,14 +307,8 @@ public async Task OnGet(CatalogIndexViewModel catalogModel, int? pageId)
     var context = HttpContext.ExtractStoreOptionsContext();
     var options = await _contextualOptions.GetAsync(context, default);
 
-    // Add this call to experimentation service based on metadata
-    if (options.FeatureMetadata is not null)
-    {
-        foreach (var feature in options.FeatureMetadata.Features)
-        {
-            await _experimentationService.SaveExperimentAssignmentAsync(context.SessionId, feature.FeatureName, feature.VariantId);
-        }
-    }
+    // Add this call to experimentation service
+    _experimentationService.SaveExperimentAssignmentAsync(context);
 
     CatalogModel = await _catalogViewModelService.GetCatalogItems(pageId ?? 0, options.ItemsPerPage, catalogModel.BrandFilterApplied, catalogModel.TypesFilterApplied);
 }
@@ -348,18 +347,13 @@ Let's start by connecting GrowthBook to our SQL Server instance. Go to "Metrics 
 
 ![Add data source](./images/growthbook-demo-create-data-source.png)
 
-With that we will redefine the Identifier Type as `sessionid` and create the experiment assignment query called `ExperimentAssignmentBySession`. In the SQL below I'm doing a bit of a manipulation with the ExperimentName and VariantId. This is due to slight misalignment between Excos data schema and GrowthBooks. A GrowthBook experiment is saved as a VariantId `{tracking-label}:{treatmentId}`, while ExperimentName would contain the Feature name. Meanwhile, a rollout or static value override defined in GrowthBook would be only identified by Feature name and variant id. This query will allow you to use both GrowthBook experiments and native Excos experiments.
+With that we will redefine the Identifier Type as `sessionid` and create the experiment assignment query called `ExperimentAssignmentBySession`. In the SQL below I'm doing a bit of a manipulation to extract experiment label and variant id for GrowthBook. This is due to the fact that Excos expects variant Ids to be uniquely identifying both the feature and variant. A GrowthBook experiment is saved as a VariantId `{tracking-label}:{treatmentId}`. This query will allow you to use both GrowthBook experiments and other Excos experiments using the configuration provider.
 
 ```sql
 SELECT
   SessionId as sessionid,
   Timestamp as timestamp,
-  COALESCE(
-    NULLIF(
-      SUBSTRING(VariantId, 1,
-        (GREATEST(1, CHARINDEX(':', VariantId)) - 1)),
-      ''),
-    ExperimentName) as experiment_id,
+  SUBSTRING(VariantId, 1, (GREATEST(1, CHARINDEX(':', VariantId)) - 1)) as experiment_id,
   SUBSTRING(VariantId, GREATEST(1, CHARINDEX(':', VariantId) + 1), 128) as variation_id
 FROM [exp].[Assignment]
 ```
@@ -422,8 +416,10 @@ I've created a simple A/A test (meaning no difference between control and treatm
 
 ```csharp
 builder.Services.BuildFeature("OfflineExperiment")
-    .Configure(feature => feature.AllocationUnit = nameof(StoreOptionsContext.SessionId))
-    .ABExperiment<CatalogDisplayOptions>((_, _) => { }, (_, _) => { }) // no change A/A experiment
+    .ABExperiment<CatalogDisplayOptions>(
+        (_, _) => { },
+        (_, _) => { }, // no change A/A experiment
+        allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```
 

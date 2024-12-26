@@ -17,7 +17,7 @@
         <Authors>Marian Dziubiak and Contributors</Authors>
         <Description>GrowthBook integration with Excos.Options</Description>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/manio143/excos</RepositoryUrl>
+        <RepositoryUrl>https://github.com/excos-platform/config-client</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 

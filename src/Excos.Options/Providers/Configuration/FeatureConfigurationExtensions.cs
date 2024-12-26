@@ -52,8 +52,8 @@ public static class FeatureConfigurationExtensions
                     }
 
                     var salt = section.GetValue<string?>("Salt");
-                    var filters = LoadFilters(filterParsers, section.GetSection("Filters"));
-                    var variants = LoadVariants(filterParsers, salt ?? featureName, section.GetSection("Variants"));
+                    var filters = LoadFilters(filterParsers, section.GetSection("Filters")).ToList();
+                    var variants = LoadVariants(filterParsers, featureName, salt ?? $"{ProviderName}_{featureName}", section.GetSection("Variants"));
 
                     var feature = new Feature
                     {
@@ -73,7 +73,7 @@ public static class FeatureConfigurationExtensions
             });
     }
 
-    private static IEnumerable<Variant> LoadVariants(IEnumerable<IFeatureFilterParser> filterParsers, string salt, IConfiguration variantsConfiguration)
+    private static IEnumerable<Variant> LoadVariants(IEnumerable<IFeatureFilterParser> filterParsers, string featureName, string salt, IConfiguration variantsConfiguration)
     {
         foreach (var section in variantsConfiguration.GetChildren())
         {
@@ -101,17 +101,18 @@ public static class FeatureConfigurationExtensions
 
             var allocation = new Allocation(range);
             var priority = section.GetValue<int?>("Priority");
-            var filters = LoadFilters(filterParsers, section.GetSection("Filters"));
+            var filters = LoadFilters(filterParsers, section.GetSection("Filters")).ToList();
             var configuration = new ConfigurationBasedConfigureOptions(section.GetSection("Settings"));
 
             var variant = new Variant
             {
-                Id = variantId,
+                Id = $"{featureName}:{variantId}",
                 Configuration = configuration,
-                Priority = priority ?? 0,
+                // if priority is not specified, we give priority to variants with more filters
+                Priority = priority ?? 1024 - filters.Count,
             };
             variant.Filters = [
-                new AllocationFilteringCondition(allocationUnit, $"{ProviderName}_{salt}", XxHashAllocation.Instance, allocation),
+                new AllocationFilteringCondition(allocationUnit, salt, XxHashAllocation.Instance, allocation),
                 ..filters
             ];
 
