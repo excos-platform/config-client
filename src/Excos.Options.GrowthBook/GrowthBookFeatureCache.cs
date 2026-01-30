@@ -105,7 +105,7 @@ namespace Excos.Options.GrowthBook
             }
             else if (IsExpired)
             {
-                _ = RequestFeaturesAsync().ConfigureAwait(false);
+                _ = RequestFeaturesAsync();
             }
 
             return _cachedFeatures;
