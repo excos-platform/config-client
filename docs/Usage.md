@@ -5,7 +5,7 @@
 Following the Options.Contextual docs:
 
 1\. Define your context class that will be passed to `IContextualOptions.GetAsync()`.
-By default `UserId` property is used for allocation calculations. You can override it globally by configuring `ExcosOptions` or override it for a single feature by configuring the `AllocationUnit` property.
+By default `UserId` property is used for allocation calculations. You can override it for a single feature by configuring the `AllocationUnit` property.
 
 ```csharp
 [OptionsContext]
@@ -99,43 +99,6 @@ internal class WeatherForecastService
             Temperature = _rng.Next(-20, 55),
             TemperatureScale = options.TemperatureScale,
         });
-    }
-}
-```
-
-## Variant overrides
-You can also allow overriding the variant based on some context - example:
-
-```csharp
-class TestUserOverride : IFeatureVariantOverride
-{
-    public Task<VariantOverride?> TryOverrideAsync<TContext>(Feature experiment, TContext optionsContext, CancellationToken cancellationToken)
-        where TContext : IOptionsContext
-    {
-        var receiver = new Receiver();
-        optionsContext.PopulateReceiver(receiver);
-        if (experiment.Name == "MyExp" && receiver.UserId.IsTestUser())
-        {
-            return new VariantOverride
-            {
-                Id = "MyVariant",
-                OverrideProviderName = nameof(TestUserOverride),
-            };
-        }
-
-        return null;
-    }
-
-    private class Receiver : IOptionsContextReceiver
-    {
-        public Guid UserId;
-        public void Receive<T>(string key, T value)
-        {
-            if (key == nameof(UserId))
-            {
-                UserId = (Guid)value;
-            }
-        }
     }
 }
 ```

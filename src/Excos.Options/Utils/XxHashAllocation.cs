@@ -13,7 +13,7 @@ namespace Excos.Options.Utils
 
         public double GetAllocationSpot(string salt, string identifier)
         {
-            var source = $"{salt}_{identifier}";
+            var source = $"{salt}_{identifier}"; // TODO: can we perform this concat on the stack?
             var hash = XxHash32.HashToUInt32(MemoryMarshal.AsBytes(source.AsSpan()));
             return (double)hash / uint.MaxValue;
         }

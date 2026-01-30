@@ -1,6 +1,14 @@
 # Data Model
 
-This document briefly describes the data model for features/experiments used in Excos.
+## General feature model
+
+A **feature** has a name and a set of **variants**, each of which has a unique id, a set of filters associated with it, a priority (in case multiple variants are resolved for one feature) and a set of settings.
+
+Filters can be applied over evaluation context. Allocation of experiments can also be implemented as a special filter.
+
+## Excos Configuration based provider
+
+This document briefly describes the data model for features/experiments used in Excos Configuration based provider. _The Excos.Option beta changes made the abstraction much looser to allow for more provider led customizations._
 
 A **unit** is either a user ID or a session ID, or some other semi-persistent identifier for which we will compute experiment allocation.
 

@@ -191,6 +191,5 @@ public class ConfigurationBasedFeaturesTest
     {
         public int Size { get; set; }
         public string Label { get; set; } = string.Empty;
-        public FeatureMetadata? Metadata { get; set; }
     }
 }
