@@ -32,7 +32,7 @@ namespace Excos.Options.GrowthBook
                 AutoReset = true,
                 Interval = options.CurrentValue.CacheDuration.TotalMilliseconds,
             };
-            _configurationRefreshTimer.Elapsed += async (_, _) => await RequestFeaturesAsync();
+            _configurationRefreshTimer.Elapsed += async (_, _) => await RequestFeaturesAsync().ConfigureAwait(false);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,7 +40,7 @@ namespace Excos.Options.GrowthBook
             if (_options.CurrentValue.RequestFeaturesOnInitialization ||
                 _configurationSource.GrowthBookConfigurationProvider is not null)
             {
-                await RequestFeaturesAsync();
+                await RequestFeaturesAsync().ConfigureAwait(false);
             }
         }
 
@@ -50,7 +50,7 @@ namespace Excos.Options.GrowthBook
 
         private async Task RequestFeaturesAsync()
         {
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -59,7 +59,7 @@ namespace Excos.Options.GrowthBook
                     return;
                 }
 
-                var (updated, growthBookFeatures) = await _growthBookApiCaller.GetFeaturesAsync();
+                var (updated, growthBookFeatures) = await _growthBookApiCaller.GetFeaturesAsync().ConfigureAwait(false);
 
                 if (!updated)
                 {
@@ -101,7 +101,7 @@ namespace Excos.Options.GrowthBook
         {
             if (IsNotInitialized)
             {
-                await RequestFeaturesAsync();
+                await RequestFeaturesAsync().ConfigureAwait(false);
             }
             else if (IsExpired)
             {

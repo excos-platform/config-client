@@ -33,14 +33,14 @@ namespace Excos.Options.GrowthBook
 
         public async Task<(bool updated, IDictionary<string, Feature> features)> GetFeaturesAsync()
         {
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync().ConfigureAwait(false);
 
             try
             {
                 var options = _options.CurrentValue;
                 var httpClient = _httpClientFactory.CreateClient(nameof(GrowthBook));
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(options.ApiHost, $"/api/features/{options.ClientKey}"));
-                var response = await httpClient.SendAsync(request);
+                var response = await httpClient.SendAsync(request).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -48,8 +48,8 @@ namespace Excos.Options.GrowthBook
                     return (false, _growthBookFeatures ?? EmptyFeatures);
                 }
 
-                var responseStream = await response.Content.ReadAsStreamAsync();
-                var responseJson = await JsonDocument.ParseAsync(responseStream);
+                var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                var responseJson = await JsonDocument.ParseAsync(responseStream).ConfigureAwait(false);
 
                 // check if it has changed since the last fetch, if not, return the cached features
                 var dateUpdated = responseJson.RootElement.GetProperty("dateUpdated").GetDateTimeOffset();
