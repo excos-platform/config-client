@@ -178,10 +178,11 @@ public class Tests
         Assert.Equal(3, features.Count);
 
         Assert.Equal("newlabel", features[0].Name);
-        Assert.Equal(2, features[0].Count);
-        Assert.Equal("label:0", features[0][0].Id);
-        Assert.Equal("label:1", features[0][1].Id);
-        Assert.Equal(3, features[0][0].Filters.Count()); // attribute filter + allocation + namespace
+        Assert.Equal(3, features[0].Count); // Now includes default variant
+        Assert.Equal("newlabel:default", features[0][0].Id); // Default variant is first
+        Assert.Equal("label:0", features[0][1].Id);
+        Assert.Equal("label:1", features[0][2].Id);
+        Assert.Equal(3, features[0][1].Filters.Count()); // attribute filter + allocation + namespace
 
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
 

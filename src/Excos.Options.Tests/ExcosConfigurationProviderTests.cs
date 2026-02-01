@@ -14,46 +14,19 @@ namespace Excos.Options.Tests;
 public class ExcosConfigurationProviderTests
 {
     [Fact]
-    public void Constructor_InitializesWithContext()
-    {
-        // Arrange
-        var context = new Dictionary<string, string>
-        {
-            ["Market"] = "US"
-        };
-        var featureProvider = new TestFeatureProvider();
-
-        // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider);
-
-        // Assert
-        Assert.NotNull(provider);
-    }
-
-    [Fact]
-    public void Constructor_WithNullContext_ThrowsArgumentNullException()
-    {
-        // Arrange
-        var featureProvider = new TestFeatureProvider();
-
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            new ExcosConfigurationProvider(null!, featureProvider));
-    }
-
-    [Fact]
-    public void Constructor_WithNullFeatureProvider_ThrowsArgumentNullException()
+    public void AddExcosConfiguration_WithNullBuilder_ThrowsArgumentNullException()
     {
         // Arrange
         var context = new Dictionary<string, string>();
+        var featureProvider = new TestFeatureProvider();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new ExcosConfigurationProvider(context, null!));
+            ((IConfigurationBuilder)null!).AddExcosConfiguration(context, featureProvider));
     }
 
     [Fact]
-    public void ConfigurationProvider_LoadsMatchingVariants()
+    public void AddExcosConfiguration_LoadsMatchingVariants()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"TestSection":{"Value":"FromFeature"}}""");
@@ -70,20 +43,18 @@ public class ExcosConfigurationProviderTests
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
         var featureProvider = new TestFeatureProvider(feature);
+        var builder = new ConfigurationBuilder();
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
-
-        var configBuilder = new ConfigurationBuilder();
-        configBuilder.Add(new TestConfigurationSource(provider));
-        var config = configBuilder.Build();
+        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        var config = builder.Build();
 
         // Assert
         Assert.Equal("FromFeature", config["TestSection:Value"]);
     }
 
     [Fact]
-    public void ConfigurationProvider_FiltersNonMatchingVariants()
+    public void AddExcosConfiguration_FiltersNonMatchingVariants()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"TestSection":{"Value":"US"}}""");
@@ -111,20 +82,18 @@ public class ExcosConfigurationProviderTests
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
         var featureProvider = new TestFeatureProvider(feature);
+        var builder = new ConfigurationBuilder();
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
-
-        var configBuilder = new ConfigurationBuilder();
-        configBuilder.Add(new TestConfigurationSource(provider));
-        var config = configBuilder.Build();
+        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        var config = builder.Build();
 
         // Assert
         Assert.Equal("US", config["TestSection:Value"]);
     }
 
     [Fact]
-    public void ConfigurationProvider_RespectsVariantPriority()
+    public void AddExcosConfiguration_RespectsVariantPriority()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"TestSection":{"Value":"Priority1"}}""");
@@ -152,13 +121,11 @@ public class ExcosConfigurationProviderTests
 
         var context = new Dictionary<string, string>();
         var featureProvider = new TestFeatureProvider(feature);
+        var builder = new ConfigurationBuilder();
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
-
-        var configBuilder = new ConfigurationBuilder();
-        configBuilder.Add(new TestConfigurationSource(provider));
-        var config = configBuilder.Build();
+        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        var config = builder.Build();
 
         // Assert - should use variant with priority 1 (lowest)
         Assert.Equal("Priority2", config["TestSection:Value"]);
@@ -192,15 +159,30 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public void AddExcosConfiguration_WithNullBuilder_ThrowsArgumentNullException()
+    public void AddExcosConfiguration_WithoutRefreshPeriod_LoadsOnlyOnce()
     {
         // Arrange
-        var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider();
+        var json = JsonDocument.Parse("""{"TestSection":{"Value":"Initial"}}""");
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
+        json.Dispose();
 
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            ((IConfigurationBuilder)null!).AddExcosConfiguration(context, featureProvider));
+        var feature = new Feature { Name = "TestFeature" };
+        feature.Add(variant);
+
+        var context = new Dictionary<string, string>();
+        var featureProvider = new TestFeatureProvider(feature);
+        var builder = new ConfigurationBuilder();
+
+        // Act - no refresh period provided
+        builder.AddExcosConfiguration(context, featureProvider);
+        var config = builder.Build();
+
+        // Assert
+        Assert.Equal("Initial", config["TestSection:Value"]);
     }
 
     private class TestFeatureProvider : IFeatureProvider

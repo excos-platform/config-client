@@ -23,6 +23,20 @@ namespace Excos.Options.GrowthBook
                     Name = gbFeature.Key,
                 };
 
+                // Add default value as a variant with no filters (matches everything) and null priority (matched last)
+                if (defaultValue.ValueKind != JsonValueKind.Undefined)
+                {
+                    // Wrap default value with feature name as root object
+                    var wrappedDefault = WrapWithFeatureName(gbFeature.Key, defaultValue);
+                    feature.Add(new Variant
+                    {
+                        Id = $"{gbFeature.Key}:default",
+                        Configuration = wrappedDefault,
+                        Filters = Enumerable.Empty<IFilteringCondition>()
+                        // Priority defaults to 0, but with no filters it will be matched last
+                    });
+                }
+
                 var ruleIdx = 0;
                 foreach (var rule in gbFeature.Value.Rules)
                 {
@@ -47,7 +61,7 @@ namespace Excos.Options.GrowthBook
                         var variant = new Variant
                         {
                             Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
-                            Configuration = rule.Force,
+                            Configuration = WrapWithFeatureName(gbFeature.Key, rule.Force),
                             Priority = ruleIdx,
                         };
                         variant.Filters = filters;
@@ -75,7 +89,7 @@ namespace Excos.Options.GrowthBook
                             var variant = new Variant
                             {
                                 Id = $"{rule.Key}:{meta?.Key ?? i.ToString()}",
-                                Configuration = variation,
+                                Configuration = WrapWithFeatureName(gbFeature.Key, variation),
                                 Priority = ruleIdx,
                             };
                             // copy filters to allow outer collection reuse
@@ -89,6 +103,15 @@ namespace Excos.Options.GrowthBook
 
                 yield return feature;
             }
+        }
+
+        private static JsonElement WrapWithFeatureName(string featureName, JsonElement value)
+        {
+            // Create a JSON object with feature name as key
+            var dict = new Dictionary<string, JsonElement> { [featureName] = value };
+            var json = System.Text.Json.JsonSerializer.Serialize(dict);
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
         }
     }
 }

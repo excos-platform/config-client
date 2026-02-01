@@ -8,7 +8,7 @@ namespace Excos.Options;
 /// <summary>
 /// Extension methods for JSON string parsing and validation.
 /// </summary>
-public static class JsonStringExtensions
+internal static class JsonStringExtensions
 {
     /// <summary>
     /// Parses a JSON string into a JsonElement, validating that it's valid JSON.

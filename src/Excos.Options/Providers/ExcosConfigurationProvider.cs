@@ -18,7 +18,7 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     private readonly IFeatureProvider _featureProvider;
     private readonly IFeatureEvaluation _featureEvaluation;
     private readonly DynamicContext _context;
-    private readonly Timer _refreshTimer;
+    private readonly Timer? _refreshTimer;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
@@ -27,7 +27,7 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     /// </summary>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
     /// <param name="featureProvider">Feature provider to fetch features from.</param>
-    /// <param name="refreshPeriod">Period for refetching features. Defaults to 15 minutes.</param>
+    /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     public ExcosConfigurationProvider(
         IDictionary<string, string> context,
         IFeatureProvider featureProvider,
@@ -40,8 +40,11 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
         _featureEvaluation = new FeatureEvaluation(new[] { featureProvider });
         _context = new DynamicContext(context);
         
-        var period = refreshPeriod ?? TimeSpan.FromMinutes(15);
-        _refreshTimer = new Timer(OnRefreshTimer, null, period, period);
+        // If refreshPeriod is provided, set up periodic refresh; otherwise, load once
+        if (refreshPeriod.HasValue)
+        {
+            _refreshTimer = new Timer(OnRefreshTimer, null, refreshPeriod.Value, refreshPeriod.Value);
+        }
         
         // Perform initial load synchronously
         RefreshAsync().GetAwaiter().GetResult();
@@ -127,7 +130,7 @@ internal class ExcosConfigurationSource : IConfigurationSource
     /// </summary>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
     /// <param name="featureProvider">Feature provider to fetch features from.</param>
-    /// <param name="refreshPeriod">Period for refetching features. Defaults to 15 minutes.</param>
+    /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     public ExcosConfigurationSource(
         IDictionary<string, string> context,
         IFeatureProvider featureProvider,
@@ -160,7 +163,7 @@ public static class ExcosConfigurationExtensions
     /// <param name="builder">The configuration builder.</param>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
     /// <param name="featureProvider">Feature provider to fetch features from.</param>
-    /// <param name="refreshPeriod">Period for refetching features. Defaults to 15 minutes.</param>
+    /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     /// <returns>The configuration builder.</returns>
     public static IConfigurationBuilder AddExcosConfiguration(
         this IConfigurationBuilder builder,

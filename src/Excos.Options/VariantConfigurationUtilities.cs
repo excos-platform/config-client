@@ -16,21 +16,13 @@ public static class VariantConfigurationUtilities
     /// Converts an enumerable of variants into a configuration dictionary.
     /// </summary>
     /// <param name="variants">The variants to convert.</param>
-    /// <param name="sectionPrefix">Optional prefix for configuration keys.</param>
     /// <returns>A dictionary suitable for use with the configuration framework.</returns>
     public static IDictionary<string, string?> ToConfigurationDictionary(
-        IEnumerable<Variant> variants,
-        string? sectionPrefix = null)
+        IEnumerable<Variant> variants)
     {
         ArgumentNullException.ThrowIfNull(variants);
 
-        var inputs = variants.Select(v =>
-        {
-            // Each variant should have a feature name as context
-            // We'll use empty string as default if no prefix
-            var prefix = sectionPrefix ?? string.Empty;
-            return (prefix, v.Configuration);
-        });
+        var inputs = variants.Select(v => (string.Empty, v.Configuration));
 
         return JsonConfigurationFileParser.Parse(inputs);
     }
@@ -39,15 +31,13 @@ public static class VariantConfigurationUtilities
     /// Converts an enumerable of variants into an IConfiguration.
     /// </summary>
     /// <param name="variants">The variants to convert.</param>
-    /// <param name="sectionPrefix">Optional prefix for configuration keys.</param>
     /// <returns>An IConfiguration built from the variants.</returns>
     public static IConfiguration ToConfiguration(
-        IEnumerable<Variant> variants,
-        string? sectionPrefix = null)
+        IEnumerable<Variant> variants)
     {
         ArgumentNullException.ThrowIfNull(variants);
 
-        var dictionary = ToConfigurationDictionary(variants, sectionPrefix);
+        var dictionary = ToConfigurationDictionary(variants);
         return new ConfigurationBuilder()
             .AddInMemoryCollection(dictionary)
             .Build();
@@ -76,7 +66,7 @@ public static class VariantConfigurationUtilities
             var configuration = ToConfiguration(variantList);
             
             // If section is empty, bind the entire configuration, otherwise bind the specified section
-            if (section.Length == 0)
+            if (string.IsNullOrEmpty(section))
             {
                 configuration.Bind(options);
             }
@@ -85,41 +75,5 @@ public static class VariantConfigurationUtilities
                 configuration.GetSection(section).Bind(options);
             }
         };
-    }
-
-    /// <summary>
-    /// Converts an IConfiguration section to a JsonElement.
-    /// </summary>
-    /// <param name="configuration">The configuration section to convert.</param>
-    /// <returns>A JsonElement representing the configuration data.</returns>
-    public static JsonElement ConvertConfigurationToJson(IConfiguration configuration)
-    {
-        ArgumentNullException.ThrowIfNull(configuration);
-
-        var dict = new Dictionary<string, object?>();
-        BuildDictionary(configuration, dict, string.Empty);
-
-        var json = System.Text.Json.JsonSerializer.Serialize(dict);
-        using var document = JsonDocument.Parse(json);
-        return document.RootElement.Clone();
-    }
-
-    private static void BuildDictionary(IConfiguration configuration, Dictionary<string, object?> dict, string prefix)
-    {
-        foreach (var child in configuration.GetChildren())
-        {
-            if (child.GetChildren().Any())
-            {
-                // Has children, recurse
-                var childDict = new Dictionary<string, object?>();
-                BuildDictionary(child, childDict, string.Empty);
-                dict[child.Key] = childDict;
-            }
-            else
-            {
-                // Leaf node
-                dict[child.Key] = child.Value;
-            }
-        }
     }
 }

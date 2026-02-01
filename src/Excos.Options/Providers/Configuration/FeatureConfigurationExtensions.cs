@@ -102,7 +102,7 @@ public static class FeatureConfigurationExtensions
             var allocation = new Allocation(range);
             var priority = section.GetValue<int?>("Priority");
             var filters = LoadFilters(filterParsers, section.GetSection("Filters")).ToList();
-            var configuration = VariantConfigurationUtilities.ConvertConfigurationToJson(section.GetSection("Settings"));
+            var configuration = ConvertConfigurationToJson(section.GetSection("Settings"));
 
             var variant = new Variant
             {
@@ -164,5 +164,36 @@ public static class FeatureConfigurationExtensions
         }
 
         return null;
+    }
+
+    private static System.Text.Json.JsonElement ConvertConfigurationToJson(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var dict = new Dictionary<string, object?>();
+        BuildDictionary(configuration, dict);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(dict);
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
+    private static void BuildDictionary(IConfiguration configuration, Dictionary<string, object?> dict)
+    {
+        foreach (var child in configuration.GetChildren())
+        {
+            if (child.GetChildren().Any())
+            {
+                // Has children, recurse
+                var childDict = new Dictionary<string, object?>();
+                BuildDictionary(child, childDict);
+                dict[child.Key] = childDict;
+            }
+            else
+            {
+                // Leaf node
+                dict[child.Key] = child.Value;
+            }
+        }
     }
 }
