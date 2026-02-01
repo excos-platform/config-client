@@ -82,11 +82,7 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
             }
 
             // Use FeatureEvaluation to get matching variants
-            var matchedVariants = new List<Variant>();
-            await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(_context, CancellationToken.None).ConfigureAwait(false))
-            {
-                matchedVariants.Add(variant);
-            }
+            var matchedVariants = await _featureEvaluation.EvaluateFeaturesAsync(_context, CancellationToken.None).ConfigureAwait(false);
             
             // Convert to configuration dictionary
             var data = VariantConfigurationUtilities.ToConfigurationDictionary(matchedVariants);
