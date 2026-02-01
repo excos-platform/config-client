@@ -58,7 +58,7 @@ public static class VariantConfigurationUtilities
     /// </summary>
     /// <typeparam name="TOptions">The options type to configure.</typeparam>
     /// <param name="variants">The variants to convert.</param>
-    /// <param name="section">The configuration section name.</param>
+    /// <param name="section">The configuration section name. Use empty string to bind the entire configuration.</param>
     /// <returns>An action that configures the options object.</returns>
     public static Action<TOptions> ToConfigureAction<TOptions>(
         IEnumerable<Variant> variants,
@@ -74,7 +74,16 @@ public static class VariantConfigurationUtilities
         return options =>
         {
             var configuration = ToConfiguration(variantList);
-            configuration.GetSection(section).Bind(options);
+            
+            // If section is empty, bind the entire configuration, otherwise bind the specified section
+            if (string.IsNullOrEmpty(section))
+            {
+                configuration.Bind(options);
+            }
+            else
+            {
+                configuration.GetSection(section).Bind(options);
+            }
         };
     }
 

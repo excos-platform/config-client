@@ -143,6 +143,29 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
+    public void ToConfigureAction_WithEmptySection_BindsEntireConfiguration()
+    {
+        // Arrange
+        var json = JsonDocument.Parse("""{"Value":"TestValue","Number":99}""");
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
+        json.Dispose();
+
+        var options = new TestOptions();
+
+        // Act
+        var configureAction = VariantConfigurationUtilities.ToConfigureAction<TestOptions>(new[] { variant }, "");
+        configureAction(options);
+
+        // Assert
+        Assert.Equal("TestValue", options.Value);
+        Assert.Equal(99, options.Number);
+    }
+
+    [Fact]
     public void ToConfigurationDictionary_WithComplexJson_ParsesNestedStructures()
     {
         // Arrange
