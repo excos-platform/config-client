@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using Excos.Options.Abstractions;
+using System.Text.Json;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
@@ -16,14 +16,12 @@ internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextu
         _configurationSection = configurationSection;
     }
 
-    public List<IConfigureOptions> ConfigureOptions { get; } = new(8);
+    public List<JsonElement> Configurations { get; } = new(8);
 
     public void Configure(TOptions options)
     {
-        foreach (var configureOptions in ConfigureOptions)
-        {
-            configureOptions.Configure(options, _configurationSection);
-        }
+        var configureAction = VariantConfigurationUtilities.ToConfigureAction<TOptions>(Configurations, _configurationSection);
+        configureAction(options);
     }
 
     public void Dispose()

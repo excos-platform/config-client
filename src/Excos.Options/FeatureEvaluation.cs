@@ -42,9 +42,17 @@ public static class FeatureEvaluationExtensions
         where TContext : IOptionsContext
     {
         var options = new TOptions();
+        var configurations = new List<System.Text.Json.JsonElement>();
+        
         await foreach (var variant in featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
         {
-            variant.Configuration.Configure(options, sectionName);
+            configurations.Add(variant.Configuration);
+        }
+
+        if (configurations.Count > 0)
+        {
+            var configureAction = VariantConfigurationUtilities.ToConfigureAction<TOptions>(configurations, sectionName);
+            configureAction(options);
         }
 
         return options;

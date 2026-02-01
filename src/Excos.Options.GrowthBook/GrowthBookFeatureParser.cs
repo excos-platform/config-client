@@ -47,7 +47,7 @@ namespace Excos.Options.GrowthBook
                         var variant = new Variant
                         {
                             Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
-                            Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
+                            Configuration = rule.Force,
                             Priority = ruleIdx,
                         };
                         variant.Filters = filters;
@@ -75,7 +75,7 @@ namespace Excos.Options.GrowthBook
                             var variant = new Variant
                             {
                                 Id = $"{rule.Key}:{meta?.Key ?? i.ToString()}",
-                                Configuration = new JsonConfigureOptions(gbFeature.Key, variation),
+                                Configuration = variation,
                                 Priority = ruleIdx,
                             };
                             // copy filters to allow outer collection reuse

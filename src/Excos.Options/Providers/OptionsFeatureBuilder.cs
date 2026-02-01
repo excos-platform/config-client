@@ -208,16 +208,23 @@ public static class OptionsFeatureProviderBuilderExtensions
     }
 
     /// <summary>
-    /// Sets up an A/B experiment for the feature for a specific <typeparamref name="TOptions"/> configuration.
+    /// Sets up an A/B experiment for the feature with JSON configuration.
     /// </summary>
-    /// <typeparam name="TOptions">Options type to configure.</typeparam>
     /// <param name="optionsFeatureBuilder">Builder.</param>
-    /// <param name="configureA">Configuration callback taking the options object and section name (variant A).</param>
-    /// <param name="configureB">Configuration callback taking the options object and section name (variant B).</param>
+    /// <param name="configurationJsonA">JSON configuration string for variant A.</param>
+    /// <param name="configurationJsonB">JSON configuration string for variant B.</param>
     /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder ABExperiment<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, Action<TOptions, string> configureA, Action<TOptions, string> configureB, string allocationUnit = "UserId")
+    /// <exception cref="System.Text.Json.JsonException">Thrown when the JSON configuration is invalid.</exception>
+    public static OptionsFeatureBuilder ABExperiment(
+        this OptionsFeatureBuilder optionsFeatureBuilder, 
+        string configurationJsonA, 
+        string configurationJsonB, 
+        string allocationUnit = "UserId")
     {
+        var configA = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJsonA);
+        var configB = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJsonB);
+        
         optionsFeatureBuilder.Feature.Add(new Variant
         {
             Id = $"{optionsFeatureBuilder.Feature.Name}:A_{optionsFeatureBuilder.Feature.Count}",
@@ -228,7 +235,7 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance,
                     new Allocation(new Range<double>(0, 0.5, RangeType.IncludeStart)))
                 ],
-            Configuration = new CallbackConfigureOptions<TOptions>(configureA),
+            Configuration = configA,
         });
         optionsFeatureBuilder.Feature.Add(new Variant
         {
@@ -240,23 +247,29 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance,
                     new Allocation(new Range<double>(0.5, 1, RangeType.IncludeBoth)))
                 ],
-            Configuration = new CallbackConfigureOptions<TOptions>(configureB),
+            Configuration = configB,
         });
 
         return optionsFeatureBuilder;
     }
 
     /// <summary>
-    /// Sets up a feature rollout for a specific percentage of the population for a specific <typeparamref name="TOptions"/> configuration.
+    /// Sets up a feature rollout for a specific percentage of the population with JSON configuration.
     /// </summary>
-    /// <typeparam name="TOptions">Options type to configure.</typeparam>
     /// <param name="optionsFeatureBuilder">Builder.</param>
     /// <param name="percentage">Rollout percentage (0-100%)</param>
-    /// <param name="configure">Configuration callback taking the options object and section name.</param>
+    /// <param name="configurationJson">JSON configuration string.</param>
     /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
-    public static OptionsFeatureBuilder Rollout<TOptions>(this OptionsFeatureBuilder optionsFeatureBuilder, double percentage, Action<TOptions, string> configure, string allocationUnit = "UserId")
+    /// <exception cref="System.Text.Json.JsonException">Thrown when the JSON configuration is invalid.</exception>
+    public static OptionsFeatureBuilder Rollout(
+        this OptionsFeatureBuilder optionsFeatureBuilder, 
+        double percentage, 
+        string configurationJson, 
+        string allocationUnit = "UserId")
     {
+        var config = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJson);
+        
         optionsFeatureBuilder.Feature.Add(new Variant
         {
             Id = $"{optionsFeatureBuilder.Feature.Name}:Rollout_{optionsFeatureBuilder.Feature.Count}",
@@ -267,27 +280,9 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance, 
                     Allocation.Percentage(percentage))
                 ],
-            Configuration = new CallbackConfigureOptions<TOptions>(configure),
+            Configuration = config,
         });
 
         return optionsFeatureBuilder;
-    }
-}
-
-internal sealed class CallbackConfigureOptions<TDesignatedOptions> : IConfigureOptions
-{
-    private readonly Action<TDesignatedOptions, string> _configure;
-
-    public CallbackConfigureOptions(Action<TDesignatedOptions, string> configure)
-    {
-        _configure = configure;
-    }
-
-    public void Configure<TOptions>(TOptions input, string section) where TOptions : class
-    {
-        if (typeof(TOptions) == typeof(TDesignatedOptions))
-        {
-            _configure(Unsafe.As<TOptions, TDesignatedOptions>(ref input), section);
-        }
     }
 }

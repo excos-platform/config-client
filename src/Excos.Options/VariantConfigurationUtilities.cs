@@ -94,6 +94,44 @@ public static class VariantConfigurationUtilities
     }
 
     /// <summary>
+    /// Converts an IConfiguration section to a JsonElement.
+    /// </summary>
+    /// <param name="configuration">The configuration section to convert.</param>
+    /// <returns>A JsonElement representing the configuration data.</returns>
+    public static JsonElement ConvertConfigurationToJson(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var dict = new Dictionary<string, object?>();
+        BuildDictionary(configuration, dict, string.Empty);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(dict);
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
+    private static void BuildDictionary(IConfiguration configuration, Dictionary<string, object?> dict, string prefix)
+    {
+        foreach (var child in configuration.GetChildren())
+        {
+            var key = string.IsNullOrEmpty(prefix) ? child.Key : $"{prefix}:{child.Key}";
+            
+            if (child.GetChildren().Any())
+            {
+                // Has children, recurse
+                var childDict = new Dictionary<string, object?>();
+                BuildDictionary(child, childDict, string.Empty);
+                dict[child.Key] = childDict;
+            }
+            else
+            {
+                // Leaf node
+                dict[child.Key] = child.Value;
+            }
+        }
+    }
+
+    /// <summary>
     /// Copied from Microsoft.Extensions.Configuration.Json (MIT License)
     /// Added some modifications.
     /// </summary>

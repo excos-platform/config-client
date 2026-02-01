@@ -102,7 +102,7 @@ public static class FeatureConfigurationExtensions
             var allocation = new Allocation(range);
             var priority = section.GetValue<int?>("Priority");
             var filters = LoadFilters(filterParsers, section.GetSection("Filters")).ToList();
-            var configuration = new ConfigurationBasedConfigureOptions(section.GetSection("Settings"));
+            var configuration = VariantConfigurationUtilities.ConvertConfigurationToJson(section.GetSection("Settings"));
 
             var variant = new Variant
             {
