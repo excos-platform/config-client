@@ -76,7 +76,7 @@ public static class VariantConfigurationUtilities
             var configuration = ToConfiguration(variantList);
             
             // If section is empty, bind the entire configuration, otherwise bind the specified section
-            if (string.IsNullOrEmpty(section))
+            if (section.Length == 0)
             {
                 configuration.Bind(options);
             }
