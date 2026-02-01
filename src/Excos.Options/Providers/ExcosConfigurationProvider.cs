@@ -13,9 +13,10 @@ namespace Excos.Options.Providers;
 /// Configuration provider that periodically refetches features based on a dynamic context
 /// and updates its internal configuration dictionary.
 /// </summary>
-public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
+internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
 {
     private readonly IFeatureProvider _featureProvider;
+    private readonly IFeatureEvaluation _featureEvaluation;
     private readonly DynamicContext _context;
     private readonly Timer _refreshTimer;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -36,6 +37,7 @@ public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
         ArgumentNullException.ThrowIfNull(featureProvider);
 
         _featureProvider = featureProvider;
+        _featureEvaluation = new FeatureEvaluation(new[] { featureProvider });
         _context = new DynamicContext(context);
         
         var period = refreshPeriod ?? TimeSpan.FromMinutes(15);
@@ -56,7 +58,6 @@ public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
             catch (Exception)
             {
                 // Suppress exceptions from async void method to prevent application crashes
-                // Consider adding logging here in production scenarios
             }
         }
     }
@@ -77,56 +78,24 @@ public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
                 return;
             }
 
-            // Get all features
-            var features = await _featureProvider.GetFeaturesAsync(CancellationToken.None).ConfigureAwait(false);
-            
-            // Filter variants based on context
-            var matchedVariants = FilterVariantsByContext(features, _context);
+            // Use FeatureEvaluation to get matching variants
+            var matchedVariants = new List<Variant>();
+            await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(_context, CancellationToken.None).ConfigureAwait(false))
+            {
+                matchedVariants.Add(variant);
+            }
             
             // Convert to configuration dictionary
-            var configurations = matchedVariants.Select(v => v.Configuration);
-            var data = VariantConfigurationUtilities.ToConfigurationDictionary(configurations);
+            var data = VariantConfigurationUtilities.ToConfigurationDictionary(matchedVariants);
             
             // Update data and trigger reload
-            Data = new Dictionary<string, string?>(data, StringComparer.OrdinalIgnoreCase);
+            Data = data;
             OnReload();
         }
         finally
         {
             _semaphore.Release();
         }
-    }
-
-    private static List<Variant> FilterVariantsByContext(IEnumerable<Feature> features, DynamicContext context)
-    {
-        var matchedVariants = new List<Variant>();
-        
-        foreach (var feature in features)
-        {
-            // Find the first matching variant for each feature (respecting priority)
-            var matchingVariant = feature
-                .OrderBy(v => v.Priority)
-                .FirstOrDefault(variant => AllFiltersMatch(variant, context));
-            
-            if (matchingVariant != null)
-            {
-                matchedVariants.Add(matchingVariant);
-            }
-        }
-        
-        return matchedVariants;
-    }
-
-    private static bool AllFiltersMatch(Variant variant, DynamicContext context)
-    {
-        foreach (var filter in variant.Filters)
-        {
-            if (!filter.IsSatisfiedBy(context))
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     /// <summary>
@@ -147,7 +116,7 @@ public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
 /// <summary>
 /// Configuration source for ExcosConfigurationProvider.
 /// </summary>
-public class ExcosConfigurationSource : IConfigurationSource
+internal class ExcosConfigurationSource : IConfigurationSource
 {
     private readonly IDictionary<string, string> _context;
     private readonly IFeatureProvider _featureProvider;
@@ -186,14 +155,14 @@ public class ExcosConfigurationSource : IConfigurationSource
 public static class ExcosConfigurationExtensions
 {
     /// <summary>
-    /// Adds the Excos dynamic context configuration provider.
+    /// Adds the Excos configuration provider.
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
     /// <param name="featureProvider">Feature provider to fetch features from.</param>
     /// <param name="refreshPeriod">Period for refetching features. Defaults to 15 minutes.</param>
     /// <returns>The configuration builder.</returns>
-    public static IConfigurationBuilder AddExcosDynamicContext(
+    public static IConfigurationBuilder AddExcosConfiguration(
         this IConfigurationBuilder builder,
         IDictionary<string, string> context,
         IFeatureProvider featureProvider,

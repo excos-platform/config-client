@@ -44,7 +44,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
 
         await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
         {
-            configure.Configurations.Add(variant.Configuration);
+            configure.Variants.Add(variant);
         }
 
         return configure;

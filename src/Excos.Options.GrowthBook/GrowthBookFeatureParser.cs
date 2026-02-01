@@ -4,14 +4,14 @@
 using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
-using static Excos.Options.GrowthBook.JsonConfigureOptions;
+using static Excos.Options.JsonConfigurationFileParser;
 
 namespace Excos.Options.GrowthBook
 {
     internal static class GrowthBookFeatureParser
     {
         public static IDictionary<string, string?> ConvertFeaturesToConfiguration(IDictionary<string, Models.Feature> features) =>
-            JsonConfigurationFileParser.Parse(features.Select(f => (f.Key, f.Value.DefaultValue)));
+            Excos.Options.JsonConfigurationFileParser.Parse(features.Select(f => (f.Key, f.Value.DefaultValue)));
 
         public static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
         {

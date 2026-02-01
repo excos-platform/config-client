@@ -1,4 +1,8 @@
+// Copyright (c) Marian Dziubiak and Contributors.
+// Licensed under the Apache License, Version 2.0
+
 using System.Text.Json;
+using Excos.Options.Abstractions.Data;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -7,35 +11,47 @@ namespace Excos.Options.Tests;
 public class VariantConfigurationUtilitiesTests
 {
     [Fact]
-    public void ToConfigurationDictionary_WithSingleConfiguration_ReturnsCorrectDictionary()
+    public void ToConfigurationDictionary_WithSingleVariant_ReturnsCorrectDictionary()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"Test":{"Value":"Hello"}}""");
-        var config = json.RootElement.Clone();
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
         json.Dispose();
 
         // Act
-        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { config });
+        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { variant });
 
         // Assert
         Assert.Equal("Hello", result["Test:Value"]);
     }
 
     [Fact]
-    public void ToConfigurationDictionary_WithMultipleConfigurations_MergesCorrectly()
+    public void ToConfigurationDictionary_WithMultipleVariants_MergesCorrectly()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"Section1":{"Value1":"A"}}""");
         var json2 = JsonDocument.Parse("""{"Section2":{"Value2":"B"}}""");
         
-        var config1 = json1.RootElement.Clone();
-        var config2 = json2.RootElement.Clone();
+        var variant1 = new Variant
+        {
+            Id = "v1",
+            Configuration = json1.RootElement.Clone()
+        };
+        var variant2 = new Variant
+        {
+            Id = "v2",
+            Configuration = json2.RootElement.Clone()
+        };
         
         json1.Dispose();
         json2.Dispose();
 
         // Act
-        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { config1, config2 });
+        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { variant1, variant2 });
 
         // Assert
         Assert.Equal("A", result["Section1:Value1"]);
@@ -43,22 +59,7 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfigurationDictionary_WithSectionPrefix_AppliesPrefix()
-    {
-        // Arrange
-        var json = JsonDocument.Parse("""{"Value":"Test"}""");
-        var config = json.RootElement.Clone();
-        json.Dispose();
-
-        // Act
-        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { config }, "Prefix");
-
-        // Assert
-        Assert.True(result.ContainsKey("Value"));
-    }
-
-    [Fact]
-    public void ToConfigurationDictionary_WithNullConfigurations_ThrowsArgumentNullException()
+    public void ToConfigurationDictionary_WithNullVariants_ThrowsArgumentNullException()
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -66,15 +67,19 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfiguration_WithConfigurations_CreatesWorkingConfiguration()
+    public void ToConfiguration_WithVariants_CreatesWorkingConfiguration()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"Section":{"Key":"Value"}}""");
-        var config = json.RootElement.Clone();
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
         json.Dispose();
 
         // Act
-        var result = VariantConfigurationUtilities.ToConfiguration(new[] { config });
+        var result = VariantConfigurationUtilities.ToConfiguration(new[] { variant });
 
         // Assert
         Assert.NotNull(result);
@@ -82,7 +87,7 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfiguration_WithNullConfigurations_ThrowsArgumentNullException()
+    public void ToConfiguration_WithNullVariants_ThrowsArgumentNullException()
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -90,17 +95,21 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfigureAction_WithConfigurations_BindsOptionsCorrectly()
+    public void ToConfigureAction_WithVariants_BindsOptionsCorrectly()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"MySection":{"Value":"TestValue","Number":42}}""");
-        var config = json.RootElement.Clone();
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
         json.Dispose();
 
         var options = new TestOptions();
 
         // Act
-        var configureAction = VariantConfigurationUtilities.ToConfigureAction<TestOptions>(new[] { config }, "MySection");
+        var configureAction = VariantConfigurationUtilities.ToConfigureAction<TestOptions>(new[] { variant }, "MySection");
         configureAction(options);
 
         // Assert
@@ -109,7 +118,7 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfigureAction_WithNullConfigurations_ThrowsArgumentNullException()
+    public void ToConfigureAction_WithNullVariants_ThrowsArgumentNullException()
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -121,46 +130,16 @@ public class VariantConfigurationUtilitiesTests
     {
         // Arrange
         var json = JsonDocument.Parse("""{"Value":"Test"}""");
-        var config = json.RootElement.Clone();
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
         json.Dispose();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            VariantConfigurationUtilities.ToConfigureAction<TestOptions>(new[] { config }, null!));
-    }
-
-    [Fact]
-    public void ParseJsonConfiguration_WithValidJson_ReturnsJsonElement()
-    {
-        // Arrange
-        var json = """{"Key":"Value"}""";
-
-        // Act
-        var result = VariantConfigurationUtilities.ParseJsonConfiguration(json);
-
-        // Assert
-        Assert.Equal(JsonValueKind.Object, result.ValueKind);
-        Assert.Equal("Value", result.GetProperty("Key").GetString());
-    }
-
-    [Fact]
-    public void ParseJsonConfiguration_WithInvalidJson_ThrowsException()
-    {
-        // Arrange
-        var invalidJson = "{invalid json";
-
-        // Act & Assert
-        // JsonDocument.Parse throws JsonException or its subclass (JsonReaderException) for invalid JSON
-        Assert.ThrowsAny<JsonException>(() =>
-            VariantConfigurationUtilities.ParseJsonConfiguration(invalidJson));
-    }
-
-    [Fact]
-    public void ParseJsonConfiguration_WithNullJson_ThrowsArgumentNullException()
-    {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            VariantConfigurationUtilities.ParseJsonConfiguration(null!));
+            VariantConfigurationUtilities.ToConfigureAction<TestOptions>(new[] { variant }, null!));
     }
 
     [Fact]
@@ -177,11 +156,15 @@ public class VariantConfigurationUtilitiesTests
             }
         }
         """);
-        var config = json.RootElement.Clone();
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
         json.Dispose();
 
         // Act
-        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { config });
+        var result = VariantConfigurationUtilities.ToConfigurationDictionary(new[] { variant });
 
         // Assert
         Assert.Equal("Nested", result["Parent:Child:Value"]);
@@ -191,14 +174,22 @@ public class VariantConfigurationUtilitiesTests
     }
 
     [Fact]
-    public void ToConfigureAction_WithMultipleConfigurations_AppliesAllConfigurations()
+    public void ToConfigureAction_WithMultipleVariants_AppliesAllConfigurations()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"TestSection":{"Value":"First"}}""");
         var json2 = JsonDocument.Parse("""{"TestSection":{"Number":99}}""");
         
-        var config1 = json1.RootElement.Clone();
-        var config2 = json2.RootElement.Clone();
+        var variant1 = new Variant
+        {
+            Id = "v1",
+            Configuration = json1.RootElement.Clone()
+        };
+        var variant2 = new Variant
+        {
+            Id = "v2",
+            Configuration = json2.RootElement.Clone()
+        };
         
         json1.Dispose();
         json2.Dispose();
@@ -207,7 +198,7 @@ public class VariantConfigurationUtilitiesTests
 
         // Act
         var configureAction = VariantConfigurationUtilities.ToConfigureAction<TestOptions>(
-            new[] { config1, config2 }, 
+            new[] { variant1, variant2 }, 
             "TestSection");
         configureAction(options);
 

@@ -165,54 +165,34 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public void DefaultRefreshPeriod_Is15Minutes()
+    public void AddExcosConfiguration_AddsProviderToBuilder()
     {
         // Arrange
-        var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider();
+        var json = JsonDocument.Parse("""{"TestSection":{"Value":"Test"}}""");
+        var variant = new Variant
+        {
+            Id = "test",
+            Configuration = json.RootElement.Clone()
+        };
+        json.Dispose();
 
-        // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider);
+        var feature = new Feature { Name = "TestFeature" };
+        feature.Add(variant);
 
-        // Assert
-        // We can't directly test the timer period, but we verify it doesn't throw
-        Assert.NotNull(provider);
-    }
-
-    [Fact]
-    public void CustomRefreshPeriod_IsUsed()
-    {
-        // Arrange
-        var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider();
-        var customPeriod = TimeSpan.FromMinutes(5);
-
-        // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, customPeriod);
-
-        // Assert
-        // We can't directly test the timer period, but we verify it doesn't throw
-        Assert.NotNull(provider);
-    }
-
-    [Fact]
-    public void AddExcosDynamicContext_AddsProviderToBuilder()
-    {
-        // Arrange
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureProvider = new TestFeatureProvider();
+        var featureProvider = new TestFeatureProvider(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
-        builder.AddExcosDynamicContext(context, featureProvider);
+        builder.AddExcosConfiguration(context, featureProvider);
         var config = builder.Build();
 
-        // Assert
-        Assert.NotNull(config);
+        // Assert - verify configuration works by reading a setting
+        Assert.Equal("Test", config["TestSection:Value"]);
     }
 
     [Fact]
-    public void AddExcosDynamicContext_WithNullBuilder_ThrowsArgumentNullException()
+    public void AddExcosConfiguration_WithNullBuilder_ThrowsArgumentNullException()
     {
         // Arrange
         var context = new Dictionary<string, string>();
@@ -220,7 +200,7 @@ public class ExcosConfigurationProviderTests
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            ((IConfigurationBuilder)null!).AddExcosDynamicContext(context, featureProvider));
+            ((IConfigurationBuilder)null!).AddExcosConfiguration(context, featureProvider));
     }
 
     private class TestFeatureProvider : IFeatureProvider

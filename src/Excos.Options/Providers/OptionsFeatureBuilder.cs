@@ -222,8 +222,8 @@ public static class OptionsFeatureProviderBuilderExtensions
         string configurationJsonB, 
         string allocationUnit = "UserId")
     {
-        var configA = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJsonA);
-        var configB = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJsonB);
+        var configA = configurationJsonA.ParseAsJsonElement();
+        var configB = configurationJsonB.ParseAsJsonElement();
         
         optionsFeatureBuilder.Feature.Add(new Variant
         {
@@ -268,7 +268,7 @@ public static class OptionsFeatureProviderBuilderExtensions
         string configurationJson, 
         string allocationUnit = "UserId")
     {
-        var config = VariantConfigurationUtilities.ParseJsonConfiguration(configurationJson);
+        var config = configurationJson.ParseAsJsonElement();
         
         optionsFeatureBuilder.Feature.Add(new Variant
         {
