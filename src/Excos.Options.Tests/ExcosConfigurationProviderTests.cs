@@ -194,7 +194,7 @@ public class ExcosConfigurationProviderTests
                 }
             }
             
-            return await ValueTask.FromResult<IEnumerable<Variant>>(matchedVariants);
+            return ValueTask.FromResult<IEnumerable<Variant>>(matchedVariants);
         }
     }
 }
