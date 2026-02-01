@@ -4,7 +4,6 @@
 using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
-using static Excos.Options.JsonConfigurationFileParser;
 
 namespace Excos.Options.GrowthBook
 {
@@ -23,17 +22,17 @@ namespace Excos.Options.GrowthBook
                     Name = gbFeature.Key,
                 };
 
-                // Add default value as a variant with no filters (matches everything) and null priority (matched last)
+                // Add default value as a variant with no filters (matches everything) and explicit null priority (matched last)
                 if (defaultValue.ValueKind != JsonValueKind.Undefined)
                 {
-                    // Wrap default value with feature name as root object
+                    // Wrap default value with feature name as root object (unless it's already an object)
                     var wrappedDefault = WrapWithFeatureName(gbFeature.Key, defaultValue);
                     feature.Add(new Variant
                     {
                         Id = $"{gbFeature.Key}:default",
                         Configuration = wrappedDefault,
-                        Filters = Enumerable.Empty<IFilteringCondition>()
-                        // Priority defaults to 0, but with no filters it will be matched last
+                        Filters = Enumerable.Empty<IFilteringCondition>(),
+                        Priority = int.MaxValue  // Explicitly set high priority to be matched last
                     });
                 }
 
@@ -107,7 +106,13 @@ namespace Excos.Options.GrowthBook
 
         private static JsonElement WrapWithFeatureName(string featureName, JsonElement value)
         {
-            // Create a JSON object with feature name as key
+            // If the value is already an object, use it verbatim (configured as JSON in GrowthBook)
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                return value;
+            }
+            
+            // Otherwise, create a JSON object with feature name as key
             var dict = new Dictionary<string, JsonElement> { [featureName] = value };
             var json = System.Text.Json.JsonSerializer.Serialize(dict);
             using var document = JsonDocument.Parse(json);

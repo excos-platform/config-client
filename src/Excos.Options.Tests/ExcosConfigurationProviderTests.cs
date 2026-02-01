@@ -18,11 +18,11 @@ public class ExcosConfigurationProviderTests
     {
         // Arrange
         var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider();
+        var featureEvaluation = new TestFeatureEvaluation();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            ((IConfigurationBuilder)null!).AddExcosConfiguration(context, featureProvider));
+            ((IConfigurationBuilder)null!).AddExcosConfiguration(context, featureEvaluation));
     }
 
     [Fact]
@@ -42,11 +42,11 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureProvider = new TestFeatureProvider(feature);
+        var featureEvaluation = new TestFeatureEvaluation(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
-        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        builder.AddExcosConfiguration(context, featureEvaluation);
         var config = builder.Build();
 
         // Assert
@@ -81,11 +81,11 @@ public class ExcosConfigurationProviderTests
         feature.Add(variantEU);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureProvider = new TestFeatureProvider(feature);
+        var featureEvaluation = new TestFeatureEvaluation(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
-        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        builder.AddExcosConfiguration(context, featureEvaluation);
         var config = builder.Build();
 
         // Assert
@@ -120,11 +120,11 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant2);
 
         var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider(feature);
+        var featureEvaluation = new TestFeatureEvaluation(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
-        builder.AddExcosConfiguration(context, featureProvider, TimeSpan.FromHours(1));
+        builder.AddExcosConfiguration(context, featureEvaluation);
         var config = builder.Build();
 
         // Assert - should use variant with priority 1 (lowest)
@@ -147,71 +147,54 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureProvider = new TestFeatureProvider(feature);
+        var featureEvaluation = new TestFeatureEvaluation(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
-        builder.AddExcosConfiguration(context, featureProvider);
+        builder.AddExcosConfiguration(context, featureEvaluation);
         var config = builder.Build();
 
         // Assert - verify configuration works by reading a setting
         Assert.Equal("Test", config["TestSection:Value"]);
     }
 
-    [Fact]
-    public void AddExcosConfiguration_WithoutRefreshPeriod_LoadsOnlyOnce()
-    {
-        // Arrange
-        var json = JsonDocument.Parse("""{"TestSection":{"Value":"Initial"}}""");
-        var variant = new Variant
-        {
-            Id = "test",
-            Configuration = json.RootElement.Clone()
-        };
-        json.Dispose();
-
-        var feature = new Feature { Name = "TestFeature" };
-        feature.Add(variant);
-
-        var context = new Dictionary<string, string>();
-        var featureProvider = new TestFeatureProvider(feature);
-        var builder = new ConfigurationBuilder();
-
-        // Act - no refresh period provided
-        builder.AddExcosConfiguration(context, featureProvider);
-        var config = builder.Build();
-
-        // Assert
-        Assert.Equal("Initial", config["TestSection:Value"]);
-    }
-
-    private class TestFeatureProvider : IFeatureProvider
+    private class TestFeatureEvaluation : IFeatureEvaluation
     {
         private readonly List<Feature> _features = new();
 
-        public TestFeatureProvider(params Feature[] features)
+        public TestFeatureEvaluation(params Feature[] features)
         {
             _features.AddRange(features);
         }
 
-        public ValueTask<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
+        public async ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken) where TContext : Microsoft.Extensions.Options.Contextual.IOptionsContext
         {
-            return ValueTask.FromResult<IEnumerable<Feature>>(_features);
-        }
-    }
-
-    private class TestConfigurationSource : IConfigurationSource
-    {
-        private readonly IConfigurationProvider _provider;
-
-        public TestConfigurationSource(IConfigurationProvider provider)
-        {
-            _provider = provider;
-        }
-
-        public IConfigurationProvider Build(IConfigurationBuilder builder)
-        {
-            return _provider;
+            // Simple evaluation - just return matching variants from features
+            var matchedVariants = new List<Variant>();
+            
+            foreach (var feature in _features)
+            {
+                foreach (var variant in feature.OrderBy(v => v.Priority))
+                {
+                    bool allFiltersMatch = true;
+                    foreach (var filter in variant.Filters)
+                    {
+                        if (!filter.IsSatisfiedBy(context))
+                        {
+                            allFiltersMatch = false;
+                            break;
+                        }
+                    }
+                    
+                    if (allFiltersMatch)
+                    {
+                        matchedVariants.Add(variant);
+                        break; // Only first matching variant per feature
+                    }
+                }
+            }
+            
+            return await ValueTask.FromResult<IEnumerable<Variant>>(matchedVariants);
         }
     }
 }

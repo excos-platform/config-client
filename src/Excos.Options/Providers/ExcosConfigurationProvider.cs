@@ -15,7 +15,6 @@ namespace Excos.Options.Providers;
 /// </summary>
 internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
 {
-    private readonly IFeatureProvider _featureProvider;
     private readonly IFeatureEvaluation _featureEvaluation;
     private readonly DynamicContext _context;
     private readonly Timer? _refreshTimer;
@@ -26,18 +25,17 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     /// Initializes a new instance of the ExcosConfigurationProvider class.
     /// </summary>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
-    /// <param name="featureProvider">Feature provider to fetch features from.</param>
+    /// <param name="featureEvaluation">Feature evaluation service.</param>
     /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     public ExcosConfigurationProvider(
         IDictionary<string, string> context,
-        IFeatureProvider featureProvider,
+        IFeatureEvaluation featureEvaluation,
         TimeSpan? refreshPeriod = null)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(featureProvider);
+        ArgumentNullException.ThrowIfNull(featureEvaluation);
 
-        _featureProvider = featureProvider;
-        _featureEvaluation = new FeatureEvaluation(new[] { featureProvider });
+        _featureEvaluation = featureEvaluation;
         _context = new DynamicContext(context);
         
         // If refreshPeriod is provided, set up periodic refresh; otherwise, load once
@@ -84,11 +82,11 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
             // Use FeatureEvaluation to get matching variants
             var matchedVariants = await _featureEvaluation.EvaluateFeaturesAsync(_context, CancellationToken.None).ConfigureAwait(false);
             
-            // Convert to configuration dictionary
+            // Convert to configuration dictionary (already case-insensitive from parser)
             var data = VariantConfigurationUtilities.ToConfigurationDictionary(matchedVariants);
             
-            // Update data and trigger reload (ensure case-insensitive comparison)
-            Data = new Dictionary<string, string?>(data, StringComparer.OrdinalIgnoreCase);
+            // Update data and trigger reload
+            Data = data;
             OnReload();
         }
         finally
@@ -118,22 +116,22 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
 internal class ExcosConfigurationSource : IConfigurationSource
 {
     private readonly IDictionary<string, string> _context;
-    private readonly IFeatureProvider _featureProvider;
+    private readonly IFeatureEvaluation _featureEvaluation;
     private readonly TimeSpan? _refreshPeriod;
 
     /// <summary>
     /// Initializes a new instance of the ExcosConfigurationSource class.
     /// </summary>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
-    /// <param name="featureProvider">Feature provider to fetch features from.</param>
+    /// <param name="featureEvaluation">Feature evaluation service.</param>
     /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     public ExcosConfigurationSource(
         IDictionary<string, string> context,
-        IFeatureProvider featureProvider,
+        IFeatureEvaluation featureEvaluation,
         TimeSpan? refreshPeriod = null)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _featureProvider = featureProvider ?? throw new ArgumentNullException(nameof(featureProvider));
+        _featureEvaluation = featureEvaluation ?? throw new ArgumentNullException(nameof(featureEvaluation));
         _refreshPeriod = refreshPeriod;
     }
 
@@ -144,7 +142,7 @@ internal class ExcosConfigurationSource : IConfigurationSource
     /// <returns>The configuration provider.</returns>
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        return new ExcosConfigurationProvider(_context, _featureProvider, _refreshPeriod);
+        return new ExcosConfigurationProvider(_context, _featureEvaluation, _refreshPeriod);
     }
 }
 
@@ -158,18 +156,18 @@ public static class ExcosConfigurationExtensions
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
-    /// <param name="featureProvider">Feature provider to fetch features from.</param>
+    /// <param name="featureEvaluation">Feature evaluation service.</param>
     /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     /// <returns>The configuration builder.</returns>
     public static IConfigurationBuilder AddExcosConfiguration(
         this IConfigurationBuilder builder,
         IDictionary<string, string> context,
-        IFeatureProvider featureProvider,
+        IFeatureEvaluation featureEvaluation,
         TimeSpan? refreshPeriod = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         
-        return builder.Add(new ExcosConfigurationSource(context, featureProvider, refreshPeriod));
+        return builder.Add(new ExcosConfigurationSource(context, featureEvaluation, refreshPeriod));
     }
 }
 
