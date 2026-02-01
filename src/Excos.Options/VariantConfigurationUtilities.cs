@@ -114,8 +114,6 @@ public static class VariantConfigurationUtilities
     {
         foreach (var child in configuration.GetChildren())
         {
-            var key = string.IsNullOrEmpty(prefix) ? child.Key : $"{prefix}:{child.Key}";
-            
             if (child.GetChildren().Any())
             {
                 // Has children, recurse

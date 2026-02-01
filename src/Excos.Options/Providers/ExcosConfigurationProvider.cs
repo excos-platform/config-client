@@ -39,14 +39,25 @@ public class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
         _context = new DynamicContext(context);
         
         var period = refreshPeriod ?? TimeSpan.FromMinutes(15);
-        _refreshTimer = new Timer(OnRefreshTimer, null, TimeSpan.Zero, period);
+        _refreshTimer = new Timer(OnRefreshTimer, null, period, period);
+        
+        // Perform initial load synchronously
+        RefreshAsync().GetAwaiter().GetResult();
     }
 
     private async void OnRefreshTimer(object? state)
     {
         if (!_disposed)
         {
-            await RefreshAsync().ConfigureAwait(false);
+            try
+            {
+                await RefreshAsync().ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Suppress exceptions from async void method to prevent application crashes
+                // Consider adding logging here in production scenarios
+            }
         }
     }
 

@@ -53,7 +53,7 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public async Task ConfigurationProvider_LoadsMatchingVariants()
+    public void ConfigurationProvider_LoadsMatchingVariants()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"TestSection":{"Value":"FromFeature"}}""");
@@ -72,10 +72,7 @@ public class ExcosConfigurationProviderTests
         var featureProvider = new TestFeatureProvider(feature);
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromMilliseconds(100));
-        
-        // Wait for initial load
-        await Task.Delay(200);
+        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
 
         var configBuilder = new ConfigurationBuilder();
         configBuilder.Add(new TestConfigurationSource(provider));
@@ -86,7 +83,7 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public async Task ConfigurationProvider_FiltersNonMatchingVariants()
+    public void ConfigurationProvider_FiltersNonMatchingVariants()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"TestSection":{"Value":"US"}}""");
@@ -116,10 +113,7 @@ public class ExcosConfigurationProviderTests
         var featureProvider = new TestFeatureProvider(feature);
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromMilliseconds(100));
-        
-        // Wait for initial load
-        await Task.Delay(200);
+        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
 
         var configBuilder = new ConfigurationBuilder();
         configBuilder.Add(new TestConfigurationSource(provider));
@@ -130,7 +124,7 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public async Task ConfigurationProvider_RespectsVariantPriority()
+    public void ConfigurationProvider_RespectsVariantPriority()
     {
         // Arrange
         var json1 = JsonDocument.Parse("""{"TestSection":{"Value":"Priority1"}}""");
@@ -160,10 +154,7 @@ public class ExcosConfigurationProviderTests
         var featureProvider = new TestFeatureProvider(feature);
 
         // Act
-        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromMilliseconds(100));
-        
-        // Wait for initial load
-        await Task.Delay(200);
+        using var provider = new ExcosConfigurationProvider(context, featureProvider, TimeSpan.FromHours(1));
 
         var configBuilder = new ConfigurationBuilder();
         configBuilder.Add(new TestConfigurationSource(provider));
