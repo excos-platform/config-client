@@ -88,8 +88,8 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
             // Convert to configuration dictionary
             var data = VariantConfigurationUtilities.ToConfigurationDictionary(matchedVariants);
             
-            // Update data and trigger reload
-            Data = data;
+            // Update data and trigger reload (ensure case-insensitive comparison)
+            Data = new Dictionary<string, string?>(data, StringComparer.OrdinalIgnoreCase);
             OnReload();
         }
         finally

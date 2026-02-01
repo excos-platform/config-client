@@ -165,7 +165,7 @@ public class ExcosConfigurationProviderTests
     }
 
     [Fact]
-    public void AddExcosConfiguration_AddsProviderToBuilder()
+    public void AddExcosConfiguration_ConfiguresValuesCorrectly()
     {
         // Arrange
         var json = JsonDocument.Parse("""{"TestSection":{"Value":"Test"}}""");
