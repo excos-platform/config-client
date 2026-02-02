@@ -9,8 +9,6 @@ namespace Excos.Options.GrowthBook
 {
     internal static class GrowthBookFeatureParser
     {
-        private const string DefaultVariantSuffix = ":default";
-
         public static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
         {
             foreach (var gbFeature in features)
@@ -28,7 +26,7 @@ namespace Excos.Options.GrowthBook
                     var wrappedDefault = WrapWithFeatureName(gbFeature.Key, defaultValue);
                     feature.Add(new Variant
                     {
-                        Id = $"{gbFeature.Key}{DefaultVariantSuffix}",
+                        Id = $"{gbFeature.Key}{GrowthBookConstants.DefaultVariantSuffix}",
                         Configuration = wrappedDefault,
                         Filters = Enumerable.Empty<IFilteringCondition>(),
                         Priority = int.MaxValue  // Explicitly set high priority to be matched last
