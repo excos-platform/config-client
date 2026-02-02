@@ -37,29 +37,13 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Configures the integration between Excos.Options.Contextual and GrowthBook as well as registering a Configuration provider for GrowthBook features' default values.
+    /// Configures the integration between Excos.Options.Contextual and GrowthBook.
     /// </summary>
     public static IHostBuilder ConfigureExcosWithGrowthBook(this IHostBuilder hostBuilder)
     {
-        // Create the shared feature evaluation for default values
-        var gbEvaluation = new GrowthBookDefaultValuesFeatureProvider();
-        
-        hostBuilder.ConfigureAppConfiguration((_, builder) =>
-        {
-            // Add configuration provider for GrowthBook default values
-            // Empty dictionary context: default values have no filter requirements (match all contexts)
-            // Periodic refresh: picks up changes when GrowthBookFeatureCache updates features
-            builder.AddExcosConfiguration(
-                new Dictionary<string, string>(), // Empty context - default values match everything
-                gbEvaluation,
-                TimeSpan.FromSeconds(1));
-        });
-        
         hostBuilder.ConfigureServices((_, services) =>
         {
             services.ConfigureExcosWithGrowthBook();
-            // Register the evaluation so GrowthBookFeatureCache can update it
-            services.AddSingleton(gbEvaluation);
         });
         
         return hostBuilder;

@@ -15,7 +15,6 @@ namespace Excos.Options.Providers;
 /// </summary>
 internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
 {
-    private readonly IFeatureProvider _featureProvider;
     private readonly IFeatureEvaluation _featureEvaluation;
     private readonly DynamicContext _context;
     private readonly Timer? _refreshTimer;
@@ -26,18 +25,17 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     /// Initializes a new instance of the ExcosConfigurationProvider class.
     /// </summary>
     /// <param name="context">Dictionary of context values for filtering variants.</param>
-    /// <param name="featureProvider">Feature provider to fetch features from.</param>
+    /// <param name="featureEvaluation">Feature evaluation to use for evaluating features.</param>
     /// <param name="refreshPeriod">Period for refetching features. If null, configuration is loaded only once.</param>
     public ExcosConfigurationProvider(
         IDictionary<string, string> context,
-        IFeatureProvider featureProvider,
+        IFeatureEvaluation featureEvaluation,
         TimeSpan? refreshPeriod = null)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(featureProvider);
+        ArgumentNullException.ThrowIfNull(featureEvaluation);
 
-        _featureProvider = featureProvider;
-        _featureEvaluation = new FeatureEvaluation(new[] { featureProvider });
+        _featureEvaluation = featureEvaluation;
         _context = new DynamicContext(context);
         
         // If refreshPeriod is provided, set up periodic refresh; otherwise, load once
@@ -144,7 +142,9 @@ internal class ExcosConfigurationSource : IConfigurationSource
     /// <returns>The configuration provider.</returns>
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        return new ExcosConfigurationProvider(_context, _featureProvider, _refreshPeriod);
+        // Create FeatureEvaluation from the provider
+        var featureEvaluation = new FeatureEvaluation(new[] { _featureProvider });
+        return new ExcosConfigurationProvider(_context, featureEvaluation, _refreshPeriod);
     }
 }
 

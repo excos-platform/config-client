@@ -13,9 +13,7 @@ namespace Excos.Options.GrowthBook
         private readonly IOptionsMonitor<GrowthBookOptions> _options;
         private readonly GrowthBookApiCaller _growthBookApiCaller;
         private readonly ILogger<GrowthBookFeatureCache> _logger;
-        private readonly GrowthBookDefaultValuesFeatureProvider? _defaultValuesEvaluation;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
-        private readonly System.Timers.Timer _configurationRefreshTimer;
 
         private List<Feature> _cachedFeatures = new();
         private DateTimeOffset? _cacheExpiration;
@@ -23,26 +21,16 @@ namespace Excos.Options.GrowthBook
         public GrowthBookFeatureCache(
             IOptionsMonitor<GrowthBookOptions> options, 
             GrowthBookApiCaller growthBookApiCaller, 
-            ILogger<GrowthBookFeatureCache> logger, 
-            GrowthBookDefaultValuesFeatureProvider? defaultValuesEvaluation = null)
+            ILogger<GrowthBookFeatureCache> logger)
         {
             _options = options;
             _growthBookApiCaller = growthBookApiCaller;
             _logger = logger;
-            _defaultValuesEvaluation = defaultValuesEvaluation;
-
-            _configurationRefreshTimer = new System.Timers.Timer
-            {
-                AutoReset = true,
-                Interval = options.CurrentValue.CacheDuration.TotalMilliseconds,
-            };
-            _configurationRefreshTimer.Elapsed += async (_, _) => await RequestFeaturesAsync().ConfigureAwait(false);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            if (_options.CurrentValue.RequestFeaturesOnInitialization ||
-                _defaultValuesEvaluation is not null)
+            if (_options.CurrentValue.RequestFeaturesOnInitialization)
             {
                 await RequestFeaturesAsync().ConfigureAwait(false);
             }
@@ -75,14 +63,6 @@ namespace Excos.Options.GrowthBook
                 features.AddRange(GrowthBookFeatureParser.ConvertFeaturesToExcos(growthBookFeatures));
                 // then swap them
                 _ = Interlocked.Exchange(ref _cachedFeatures, features);
-
-                // Update the default values feature evaluation if registered
-                _defaultValuesEvaluation?.UpdateFeatures(features);
-
-                if (_defaultValuesEvaluation is not null && !_configurationRefreshTimer.Enabled)
-                {
-                    _configurationRefreshTimer.Start();
-                }
 
                 _cacheExpiration = DateTimeOffset.UtcNow + _options.CurrentValue.CacheDuration;
 
