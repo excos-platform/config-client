@@ -192,12 +192,11 @@ public class Tests
     [Fact]
     public async Task ConfigurationIsSetUp()
     {
-        var host = BuildHost(new GrowthBookOptions());
+        var host = BuildHostWithConfiguration(new GrowthBookOptions());
         await host.StartAsync();
         
-        // Wait for background service to load features and configuration provider to refresh
-        // The configuration provider has a 1-second refresh period, and the cache loads on startup
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        // Configuration is loaded synchronously when AddExcosGrowthBookConfiguration is called
+        // No need to wait for background service
         
         var config = host.Services.GetRequiredService<IConfiguration>();
 
@@ -266,6 +265,23 @@ public class Tests
                 services.AddSingleton<IOptionsMonitor<GrowthBookOptions>>(_ => new OptionsMonitor<GrowthBookOptions>(options));
                 services.AddSingleton<ILogger<GrowthBookFeatureProvider>, MockLogger<GrowthBookFeatureProvider>>();
                 services.AddSingleton<IHttpClientFactory>(_ => new MockHttpClientFactory(new MockHandler(Payload)));
+            });
+
+        return builder.Build();
+    }
+
+    private IHost BuildHostWithConfiguration(GrowthBookOptions options)
+    {
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddExcosGrowthBookConfiguration(opts =>
+                {
+                    opts.ClientKey = string.IsNullOrEmpty(options.ClientKey) ? "test-client-key" : options.ClientKey;
+                    opts.Context = new Dictionary<string, string>(); // Empty context to get all variants including defaults
+                    opts.RefreshPeriod = null; // Load once
+                    opts.HttpMessageHandler = new MockHandler(Payload);
+                });
             });
 
         return builder.Build();
