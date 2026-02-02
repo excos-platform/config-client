@@ -18,7 +18,7 @@ public class ExcosConfigurationProviderTests
     {
         // Arrange
         var context = new Dictionary<string, string>();
-        var featureEvaluation = new TestFeatureEvaluation();
+        var featureEvaluation = new TestFeatureProvider();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -42,7 +42,7 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureEvaluation = new TestFeatureEvaluation(feature);
+        var featureEvaluation = new TestFeatureProvider(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
@@ -81,7 +81,7 @@ public class ExcosConfigurationProviderTests
         feature.Add(variantEU);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureEvaluation = new TestFeatureEvaluation(feature);
+        var featureEvaluation = new TestFeatureProvider(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
@@ -120,7 +120,7 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant2);
 
         var context = new Dictionary<string, string>();
-        var featureEvaluation = new TestFeatureEvaluation(feature);
+        var featureEvaluation = new TestFeatureProvider(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
@@ -147,7 +147,7 @@ public class ExcosConfigurationProviderTests
         feature.Add(variant);
 
         var context = new Dictionary<string, string> { ["Market"] = "US" };
-        var featureEvaluation = new TestFeatureEvaluation(feature);
+        var featureEvaluation = new TestFeatureProvider(feature);
         var builder = new ConfigurationBuilder();
 
         // Act
@@ -158,43 +158,18 @@ public class ExcosConfigurationProviderTests
         Assert.Equal("Test", config["TestSection:Value"]);
     }
 
-    private class TestFeatureEvaluation : IFeatureEvaluation
+    private class TestFeatureProvider : IFeatureProvider
     {
         private readonly List<Feature> _features = new();
 
-        public TestFeatureEvaluation(params Feature[] features)
+        public TestFeatureProvider(params Feature[] features)
         {
             _features.AddRange(features);
         }
 
-        public ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken) where TContext : Microsoft.Extensions.Options.Contextual.IOptionsContext
+        public ValueTask<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
         {
-            // Simple evaluation - just return matching variants from features
-            var matchedVariants = new List<Variant>();
-            
-            foreach (var feature in _features)
-            {
-                foreach (var variant in feature.OrderBy(v => v.Priority))
-                {
-                    bool allFiltersMatch = true;
-                    foreach (var filter in variant.Filters)
-                    {
-                        if (!filter.IsSatisfiedBy(context))
-                        {
-                            allFiltersMatch = false;
-                            break;
-                        }
-                    }
-                    
-                    if (allFiltersMatch)
-                    {
-                        matchedVariants.Add(variant);
-                        break; // Only first matching variant per feature
-                    }
-                }
-            }
-            
-            return ValueTask.FromResult<IEnumerable<Variant>>(matchedVariants);
+            return ValueTask.FromResult<IEnumerable<Feature>>(_features);
         }
     }
 }

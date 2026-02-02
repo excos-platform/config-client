@@ -29,7 +29,7 @@ namespace Excos.Options.GrowthBook
                         Id = $"{gbFeature.Key}{GrowthBookConstants.DefaultVariantSuffix}",
                         Configuration = wrappedDefault,
                         Filters = Enumerable.Empty<IFilteringCondition>(),
-                        Priority = int.MaxValue  // Explicitly set high priority to be matched last
+                        Priority = int.MaxValue  // Highest priority to be matched last (after all rules)
                     });
                 }
 

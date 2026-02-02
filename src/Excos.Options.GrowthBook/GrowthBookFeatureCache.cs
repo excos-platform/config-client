@@ -13,7 +13,7 @@ namespace Excos.Options.GrowthBook
         private readonly IOptionsMonitor<GrowthBookOptions> _options;
         private readonly GrowthBookApiCaller _growthBookApiCaller;
         private readonly ILogger<GrowthBookFeatureCache> _logger;
-        private readonly GrowthBookDefaultValuesFeatureEvaluation? _defaultValuesEvaluation;
+        private readonly GrowthBookDefaultValuesFeatureProvider? _defaultValuesEvaluation;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private readonly System.Timers.Timer _configurationRefreshTimer;
 
@@ -24,7 +24,7 @@ namespace Excos.Options.GrowthBook
             IOptionsMonitor<GrowthBookOptions> options, 
             GrowthBookApiCaller growthBookApiCaller, 
             ILogger<GrowthBookFeatureCache> logger, 
-            GrowthBookDefaultValuesFeatureEvaluation? defaultValuesEvaluation = null)
+            GrowthBookDefaultValuesFeatureProvider? defaultValuesEvaluation = null)
         {
             _options = options;
             _growthBookApiCaller = growthBookApiCaller;

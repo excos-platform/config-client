@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
     public static IHostBuilder ConfigureExcosWithGrowthBook(this IHostBuilder hostBuilder)
     {
         // Create the shared feature evaluation for default values
-        var gbEvaluation = new GrowthBookDefaultValuesFeatureEvaluation();
+        var gbEvaluation = new GrowthBookDefaultValuesFeatureProvider();
         
         hostBuilder.ConfigureAppConfiguration((_, builder) =>
         {
