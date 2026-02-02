@@ -47,9 +47,10 @@ public static class ServiceCollectionExtensions
         hostBuilder.ConfigureAppConfiguration((_, builder) =>
         {
             // Add configuration provider for GrowthBook default values
-            // Uses periodic refresh to pick up changes when GrowthBookFeatureCache updates features
+            // Empty dictionary context: default values have no filter requirements (match all contexts)
+            // Periodic refresh: picks up changes when GrowthBookFeatureCache updates features
             builder.AddExcosConfiguration(
-                new Dictionary<string, string>(),
+                new Dictionary<string, string>(), // Empty context - default values match everything
                 gbEvaluation,
                 TimeSpan.FromSeconds(1));
         });

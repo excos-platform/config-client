@@ -12,6 +12,7 @@ namespace Excos.Options.GrowthBook;
 /// </summary>
 internal class GrowthBookDefaultValuesFeatureEvaluation : IFeatureEvaluation
 {
+    private const string DefaultVariantSuffix = ":default";
     private IEnumerable<Feature> _features = Enumerable.Empty<Feature>();
     private readonly object _lock = new();
 
@@ -39,7 +40,7 @@ internal class GrowthBookDefaultValuesFeatureEvaluation : IFeatureEvaluation
         foreach (var feature in features)
         {
             // Get only the default variant (the one with int.MaxValue priority and no filters)
-            var defaultVariant = feature.FirstOrDefault(v => v.Id.EndsWith(":default"));
+            var defaultVariant = feature.FirstOrDefault(v => v.Id.EndsWith(DefaultVariantSuffix));
             if (defaultVariant != null)
             {
                 defaultVariants.Add(defaultVariant);

@@ -196,6 +196,7 @@ public class Tests
         await host.StartAsync();
         
         // Wait for background service to load features and configuration provider to refresh
+        // The configuration provider has a 1-second refresh period, and the cache loads on startup
         await Task.Delay(TimeSpan.FromSeconds(2));
         
         var config = host.Services.GetRequiredService<IConfiguration>();
