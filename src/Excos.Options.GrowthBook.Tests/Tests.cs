@@ -194,6 +194,10 @@ public class Tests
     {
         var host = BuildHost(new GrowthBookOptions());
         await host.StartAsync();
+        
+        // Wait for background service to load features and configuration provider to refresh
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        
         var config = host.Services.GetRequiredService<IConfiguration>();
 
         Assert.Equal("Old", config.GetValue<string>("MyOptions:Label"));

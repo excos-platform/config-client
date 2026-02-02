@@ -9,9 +9,6 @@ namespace Excos.Options.GrowthBook
 {
     internal static class GrowthBookFeatureParser
     {
-        public static IDictionary<string, string?> ConvertFeaturesToConfiguration(IDictionary<string, Models.Feature> features) =>
-            Excos.Options.JsonConfigurationFileParser.Parse(features.Select(f => (f.Key, f.Value.DefaultValue)));
-
         public static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
         {
             foreach (var gbFeature in features)

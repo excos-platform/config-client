@@ -167,7 +167,7 @@ public class ExcosConfigurationProviderTests
             _features.AddRange(features);
         }
 
-        public async ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken) where TContext : Microsoft.Extensions.Options.Contextual.IOptionsContext
+        public ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken) where TContext : Microsoft.Extensions.Options.Contextual.IOptionsContext
         {
             // Simple evaluation - just return matching variants from features
             var matchedVariants = new List<Variant>();

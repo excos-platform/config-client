@@ -1,7 +1,9 @@
-﻿// Copyright (c) Marian Dziubiak and Contributors.
+// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
 using Excos.Options.Abstractions;
+using Excos.Options.Providers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -29,7 +31,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<GrowthBookApiCaller>();
         services.AddSingleton<GrowthBookFeatureCache>();
         services.AddHostedService(services => services.GetRequiredService<GrowthBookFeatureCache>()); // register cache as a service to get initialized on startup
-        services.TryAddSingleton<GrowthBookConfigurationSource>(); // if none has been registered yet we register an empty one
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureProvider), typeof(GrowthBookFeatureProvider), ServiceLifetime.Singleton));
 
         return services;
@@ -40,16 +41,26 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IHostBuilder ConfigureExcosWithGrowthBook(this IHostBuilder hostBuilder)
     {
-        var growthBookConfigurationSource = new GrowthBookConfigurationSource();
+        // Create the shared feature evaluation for default values
+        var gbEvaluation = new GrowthBookDefaultValuesFeatureEvaluation();
+        
         hostBuilder.ConfigureAppConfiguration((_, builder) =>
         {
-            builder.Add(growthBookConfigurationSource);
+            // Add configuration provider for GrowthBook default values
+            // Uses periodic refresh to pick up changes when GrowthBookFeatureCache updates features
+            builder.AddExcosConfiguration(
+                new Dictionary<string, string>(),
+                gbEvaluation,
+                TimeSpan.FromSeconds(1));
         });
+        
         hostBuilder.ConfigureServices((_, services) =>
         {
-            services.AddSingleton(growthBookConfigurationSource);
             services.ConfigureExcosWithGrowthBook();
+            // Register the evaluation so GrowthBookFeatureCache can update it
+            services.AddSingleton(gbEvaluation);
         });
+        
         return hostBuilder;
     }
 }
