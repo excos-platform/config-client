@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddLogging(builder => builder.AddFilter((_, category, _) => category?.StartsWith($"System.Net.Http.HttpClient.{nameof(GrowthBook)}") != true));
 
         services.AddHttpClient(nameof(GrowthBook));
+        services.AddSingleton<IGrowthBookHttpClientProvider, GrowthBookHttpClientFactory>();
         services.AddSingleton<GrowthBookApiCaller>();
         services.AddSingleton<GrowthBookFeatureCache>();
         services.AddHostedService(services => services.GetRequiredService<GrowthBookFeatureCache>()); // register cache as a service to get initialized on startup
