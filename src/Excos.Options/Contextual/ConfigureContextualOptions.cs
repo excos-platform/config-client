@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using Excos.Options.Abstractions;
+using Excos.Options.Abstractions.Data;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
@@ -10,20 +10,18 @@ internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextu
     where TOptions : class
 {
     private readonly string _configurationSection;
+    private readonly IReadOnlyList<Variant> _variants;
 
-    public ConfigureContextualOptions(string configurationSection)
+    public ConfigureContextualOptions(string configurationSection, IEnumerable<Variant> variants)
     {
         _configurationSection = configurationSection;
+        _variants = variants.ToList();
     }
-
-    public List<IConfigureOptions> ConfigureOptions { get; } = new(8);
 
     public void Configure(TOptions options)
     {
-        foreach (var configureOptions in ConfigureOptions)
-        {
-            configureOptions.Configure(options, _configurationSection);
-        }
+        var configureAction = VariantConfigurationUtilities.ToConfigureAction<TOptions>(_variants, _configurationSection);
+        configureAction(options);
     }
 
     public void Dispose()

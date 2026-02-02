@@ -16,7 +16,7 @@ namespace Excos.Options.GrowthBook
         };
         private static readonly Dictionary<string, Feature> EmptyFeatures = new();
 
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IGrowthBookHttpClientProvider _httpClientProvider;
         private readonly ILogger<GrowthBookApiCaller> _logger;
         private readonly IOptionsMonitor<GrowthBookOptions> _options;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -24,9 +24,9 @@ namespace Excos.Options.GrowthBook
         private IDictionary<string, Feature>? _growthBookFeatures;
         private DateTimeOffset? _lastUpdated;
 
-        public GrowthBookApiCaller(IHttpClientFactory httpClientFactory, ILogger<GrowthBookApiCaller> logger, IOptionsMonitor<GrowthBookOptions> options)
+        public GrowthBookApiCaller(IGrowthBookHttpClientProvider httpClientProvider, ILogger<GrowthBookApiCaller> logger, IOptionsMonitor<GrowthBookOptions> options)
         {
-            _httpClientFactory = httpClientFactory;
+            _httpClientProvider = httpClientProvider;
             _logger = logger;
             _options = options;
         }
@@ -38,7 +38,7 @@ namespace Excos.Options.GrowthBook
             try
             {
                 var options = _options.CurrentValue;
-                var httpClient = _httpClientFactory.CreateClient(nameof(GrowthBook));
+                using var httpClient = _httpClientProvider.GetHttpClient();
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(options.ApiHost, $"/api/features/{options.ClientKey}"));
                 var response = await httpClient.SendAsync(request).ConfigureAwait(false);
 

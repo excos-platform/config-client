@@ -30,10 +30,7 @@ public class ExcosVsFeatureManagement
         services.ConfigureExcos<TestOptions>("Test");
         services.AddExcosOptionsFeatureProvider();
         services.BuildFeature("TestFeature", "Tests")
-            .Rollout<TestOptions>(100, (options, name) =>
-            {
-                options.Setting = "Test";
-            })
+            .Rollout(100, """{"Test":{"Setting":"Test"}}""")
             .Save();
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = false, ValidateOnBuild = false });

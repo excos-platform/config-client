@@ -178,10 +178,11 @@ public class Tests
         Assert.Equal(3, features.Count);
 
         Assert.Equal("newlabel", features[0].Name);
-        Assert.Equal(2, features[0].Count);
-        Assert.Equal("label:0", features[0][0].Id);
-        Assert.Equal("label:1", features[0][1].Id);
-        Assert.Equal(3, features[0][0].Filters.Count()); // attribute filter + allocation + namespace
+        Assert.Equal(3, features[0].Count); // Now includes default variant
+        Assert.Equal("newlabel:default", features[0][0].Id); // Default variant is first
+        Assert.Equal("label:0", features[0][1].Id);
+        Assert.Equal("label:1", features[0][2].Id);
+        Assert.Equal(3, features[0][1].Filters.Count()); // attribute filter + allocation + namespace
 
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
 
@@ -191,8 +192,12 @@ public class Tests
     [Fact]
     public async Task ConfigurationIsSetUp()
     {
-        var host = BuildHost(new GrowthBookOptions());
+        var host = BuildHostWithConfiguration(new GrowthBookOptions());
         await host.StartAsync();
+        
+        // Configuration is loaded synchronously when AddExcosGrowthBookConfiguration is called
+        // No need to wait for background service
+        
         var config = host.Services.GetRequiredService<IConfiguration>();
 
         Assert.Equal("Old", config.GetValue<string>("MyOptions:Label"));
@@ -260,6 +265,23 @@ public class Tests
                 services.AddSingleton<IOptionsMonitor<GrowthBookOptions>>(_ => new OptionsMonitor<GrowthBookOptions>(options));
                 services.AddSingleton<ILogger<GrowthBookFeatureProvider>, MockLogger<GrowthBookFeatureProvider>>();
                 services.AddSingleton<IHttpClientFactory>(_ => new MockHttpClientFactory(new MockHandler(Payload)));
+            });
+
+        return builder.Build();
+    }
+
+    private IHost BuildHostWithConfiguration(GrowthBookOptions options)
+    {
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddExcosGrowthBookConfiguration(opts =>
+                {
+                    opts.ClientKey = string.IsNullOrEmpty(options.ClientKey) ? "test-client-key" : options.ClientKey;
+                    opts.Context = new Dictionary<string, string>(); // Empty context to get all variants including defaults
+                    opts.RefreshPeriod = null; // Load once
+                    opts.HttpMessageHandler = new MockHandler(Payload);
+                });
             });
 
         return builder.Build();

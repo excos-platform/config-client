@@ -42,9 +42,12 @@ public static class FeatureEvaluationExtensions
         where TContext : IOptionsContext
     {
         var options = new TOptions();
-        await foreach (var variant in featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
+        var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
+
+        if (variants.Any())
         {
-            variant.Configuration.Configure(options, sectionName);
+            var configureAction = VariantConfigurationUtilities.ToConfigureAction<TOptions>(variants, sectionName);
+            configureAction(options);
         }
 
         return options;
@@ -60,9 +63,11 @@ internal class FeatureEvaluation : IFeatureEvaluation
         _featureProviders = featureProviders;
     }
 
-    public async IAsyncEnumerable<Variant> EvaluateFeaturesAsync<TContext>(TContext context, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
+        var matchedVariants = new List<Variant>();
+        
         foreach (var provider in _featureProviders)
         {
             var features = await provider.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
@@ -72,10 +77,12 @@ internal class FeatureEvaluation : IFeatureEvaluation
                 Variant? matchingVariant = TryFindMatchingVariant(context, feature);
                 if (matchingVariant != null)
                 {
-                    yield return matchingVariant;
+                    matchedVariants.Add(matchingVariant);
                 }
             }
         }
+        
+        return matchedVariants;
     }
 
     private static Variant? TryFindMatchingVariant<TContext>(TContext context, Feature feature)

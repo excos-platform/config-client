@@ -4,15 +4,11 @@
 using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
-using static Excos.Options.GrowthBook.JsonConfigureOptions;
 
 namespace Excos.Options.GrowthBook
 {
     internal static class GrowthBookFeatureParser
     {
-        public static IDictionary<string, string?> ConvertFeaturesToConfiguration(IDictionary<string, Models.Feature> features) =>
-            JsonConfigurationFileParser.Parse(features.Select(f => (f.Key, f.Value.DefaultValue)));
-
         public static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
         {
             foreach (var gbFeature in features)
@@ -22,6 +18,20 @@ namespace Excos.Options.GrowthBook
                 {
                     Name = gbFeature.Key,
                 };
+
+                // Add default value as a variant with no filters (matches everything) and explicit null priority (matched last)
+                if (defaultValue.ValueKind != JsonValueKind.Undefined)
+                {
+                    // Wrap default value with feature name as root object (unless it's already an object)
+                    var wrappedDefault = WrapWithFeatureName(gbFeature.Key, defaultValue);
+                    feature.Add(new Variant
+                    {
+                        Id = $"{gbFeature.Key}{GrowthBookConstants.DefaultVariantSuffix}",
+                        Configuration = wrappedDefault,
+                        Filters = Enumerable.Empty<IFilteringCondition>(),
+                        Priority = int.MaxValue  // Highest priority to be matched last (after all rules)
+                    });
+                }
 
                 var ruleIdx = 0;
                 foreach (var rule in gbFeature.Value.Rules)
@@ -47,7 +57,7 @@ namespace Excos.Options.GrowthBook
                         var variant = new Variant
                         {
                             Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
-                            Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
+                            Configuration = WrapWithFeatureName(gbFeature.Key, rule.Force),
                             Priority = ruleIdx,
                         };
                         variant.Filters = filters;
@@ -75,7 +85,7 @@ namespace Excos.Options.GrowthBook
                             var variant = new Variant
                             {
                                 Id = $"{rule.Key}:{meta?.Key ?? i.ToString()}",
-                                Configuration = new JsonConfigureOptions(gbFeature.Key, variation),
+                                Configuration = WrapWithFeatureName(gbFeature.Key, variation),
                                 Priority = ruleIdx,
                             };
                             // copy filters to allow outer collection reuse
@@ -89,6 +99,21 @@ namespace Excos.Options.GrowthBook
 
                 yield return feature;
             }
+        }
+
+        private static JsonElement WrapWithFeatureName(string featureName, JsonElement value)
+        {
+            // If the value is already an object, use it verbatim (configured as JSON in GrowthBook)
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                return value;
+            }
+            
+            // Otherwise, create a JSON object with feature name as key
+            var dict = new Dictionary<string, JsonElement> { [featureName] = value };
+            var json = System.Text.Json.JsonSerializer.Serialize(dict);
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.Text.Json;
+
 namespace Excos.Options.Abstractions.Data;
 
 /// <summary>
@@ -21,10 +23,10 @@ public class Variant
     public IEnumerable<IFilteringCondition> Filters { get; set; } = Enumerable.Empty<IFilteringCondition>();
 
     /// <summary>
-    /// Options object configuration function.
-    /// Various feature providers may choose different implementations. 
+    /// Configuration data as JSON.
+    /// This enables introspection and batch processing of variant configurations.
     /// </summary>
-    public required IConfigureOptions Configuration { get; set; }
+    public required JsonElement Configuration { get; set; }
 
     /// <summary>
     /// An optional priority.
