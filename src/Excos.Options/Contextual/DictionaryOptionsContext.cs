@@ -12,7 +12,15 @@ namespace Excos.Options.Contextual;
 /// </summary>
 public class DictionaryOptionsContext : IOptionsContext
 {
-    private readonly IDictionary<string, string> _values;
+    private readonly IDictionary<string, string>? _values;
+
+    /// <summary>
+    /// Creates a new instance with no context values.
+    /// </summary>
+    public DictionaryOptionsContext()
+    {
+        _values = null;
+    }
 
     /// <summary>
     /// Creates a new instance with the specified key-value pairs.
@@ -26,6 +34,8 @@ public class DictionaryOptionsContext : IOptionsContext
     /// <inheritdoc/>
     public void PopulateReceiver<T>(T receiver) where T : IOptionsContextReceiver
     {
+        if (_values is null) return;
+
         foreach (var (key, value) in _values)
         {
             receiver.Receive(key, value);

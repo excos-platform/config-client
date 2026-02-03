@@ -32,4 +32,23 @@ public class GrowthBookOptions
     /// Whether we should request features from the GrowthBook API on initialization or lazily upon first request of configuration.
     /// </summary>
     public bool RequestFeaturesOnInitialization { get; set; } = true;
+
+    /// <summary>
+    /// Context values for variant filtering (e.g., Market, Environment).
+    /// Used when adding GrowthBook as a configuration source.
+    /// </summary>
+    public IDictionary<string, string>? Context { get; set; }
+
+    /// <summary>
+    /// Optional HTTP message handler for customizing HTTP behavior.
+    /// Used when HttpClientFactory is not available (standalone scenarios).
+    /// The caller owns the handler lifecycle.
+    /// </summary>
+    public HttpMessageHandler? HttpMessageHandler { get; set; }
+
+    /// <summary>
+    /// Optional HTTP client factory. Takes precedence over HttpMessageHandler.
+    /// When null in standalone scenarios, a SimpleHttpClientFactory is created.
+    /// </summary>
+    public IHttpClientFactory? HttpClientFactory { get; set; }
 }

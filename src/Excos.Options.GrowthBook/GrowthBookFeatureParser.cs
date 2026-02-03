@@ -10,9 +10,6 @@ namespace Excos.Options.GrowthBook
 {
     internal static class GrowthBookFeatureParser
     {
-        public static IDictionary<string, string?> ConvertFeaturesToConfiguration(IDictionary<string, Models.Feature> features) =>
-            JsonConfigurationFileParser.Parse(features.Select(f => (f.Key, f.Value.DefaultValue)));
-
         public static IEnumerable<Feature> ConvertFeaturesToExcos(IDictionary<string, Models.Feature> features)
         {
             foreach (var gbFeature in features)
@@ -85,6 +82,19 @@ namespace Excos.Options.GrowthBook
                     }
 
                     ruleIdx++;
+                }
+
+                // Add default value as a variant with null priority (lowest precedence)
+                if (defaultValue.ValueKind != JsonValueKind.Undefined)
+                {
+                    var defaultVariant = new Variant
+                    {
+                        Id = $"{gbFeature.Key}:default",
+                        Configuration = WrapValueForConfiguration(gbFeature.Key, defaultValue),
+                        Priority = null,
+                        Filters = new List<IFilteringCondition>(), // Empty filters = always matches
+                    };
+                    feature.Add(defaultVariant);
                 }
 
                 yield return feature;
