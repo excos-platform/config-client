@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" ReferenceOutputAssembly="false" />
     <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
     <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.6.0-rtm.24311.4,9.0.0)" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />

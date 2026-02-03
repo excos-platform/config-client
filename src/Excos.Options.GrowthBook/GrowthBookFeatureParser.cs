@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
-using static Excos.Options.GrowthBook.JsonConfigureOptions;
+using Excos.Options.Utils;
 
 namespace Excos.Options.GrowthBook
 {
@@ -47,7 +47,7 @@ namespace Excos.Options.GrowthBook
                         var variant = new Variant
                         {
                             Id = $"{rule.Key ?? gbFeature.Key}:Force{ruleIdx}",
-                            Configuration = new JsonConfigureOptions(gbFeature.Key, rule.Force),
+                            Configuration = WrapValueForConfiguration(gbFeature.Key, rule.Force),
                             Priority = ruleIdx,
                         };
                         variant.Filters = filters;
@@ -75,7 +75,7 @@ namespace Excos.Options.GrowthBook
                             var variant = new Variant
                             {
                                 Id = $"{rule.Key}:{meta?.Key ?? i.ToString()}",
-                                Configuration = new JsonConfigureOptions(gbFeature.Key, variation),
+                                Configuration = WrapValueForConfiguration(gbFeature.Key, variation),
                                 Priority = ruleIdx,
                             };
                             // copy filters to allow outer collection reuse
@@ -89,6 +89,21 @@ namespace Excos.Options.GrowthBook
 
                 yield return feature;
             }
+        }
+
+        /// <summary>
+        /// Wraps a JSON value for configuration binding.
+        /// For object values, returns the object as-is.
+        /// For primitive values, wraps them in an object with the feature name as the key.
+        /// </summary>
+        private static JsonElement WrapValueForConfiguration(string featureName, JsonElement value)
+        {
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                return value.Clone();
+            }
+
+            return JsonElementConversion.WrapInObject(featureName, value);
         }
     }
 }

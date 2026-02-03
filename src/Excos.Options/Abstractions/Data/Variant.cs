@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.Text.Json;
+
 namespace Excos.Options.Abstractions.Data;
 
 /// <summary>
@@ -21,15 +23,16 @@ public class Variant
     public IEnumerable<IFilteringCondition> Filters { get; set; } = Enumerable.Empty<IFilteringCondition>();
 
     /// <summary>
-    /// Options object configuration function.
-    /// Various feature providers may choose different implementations. 
+    /// Configuration data for this variant as a JSON structure.
+    /// The JSON should follow the configuration hierarchy expected by the consuming options type.
     /// </summary>
-    public required IConfigureOptions Configuration { get; set; }
+    public JsonElement Configuration { get; set; }
 
     /// <summary>
     /// An optional priority.
     /// If more than one variant is matched by filters and allocation,
-    /// the priority (lowest first) is used to determine which variant to pick.
+    /// the priority (lowest numeric value first) is used to determine which variant to pick.
+    /// A null priority is treated as lowest priority (variant is considered last).
     /// </summary>
-    public int Priority { get; set; }
+    public int? Priority { get; set; }
 }

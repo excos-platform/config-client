@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using Excos.Options.Abstractions;
+using System.Text.Json;
+using Excos.Options.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
 namespace Excos.Options.Contextual;
@@ -16,13 +18,16 @@ internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextu
         _configurationSection = configurationSection;
     }
 
-    public List<IConfigureOptions> ConfigureOptions { get; } = new(8);
+    public List<JsonElement> ConfigurationJsons { get; } = new(8);
 
     public void Configure(TOptions options)
     {
-        foreach (var configureOptions in ConfigureOptions)
+        foreach (var json in ConfigurationJsons)
         {
-            configureOptions.Configure(options, _configurationSection);
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(json))
+                .Build();
+            config.GetSection(_configurationSection).Bind(options);
         }
     }
 

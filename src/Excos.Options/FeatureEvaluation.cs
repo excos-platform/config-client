@@ -3,7 +3,9 @@
 
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Abstractions;
+using Excos.Options.Utils;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,7 +46,10 @@ public static class FeatureEvaluationExtensions
         var options = new TOptions();
         await foreach (var variant in featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
         {
-            variant.Configuration.Configure(options, sectionName);
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant.Configuration))
+                .Build();
+            config.GetSection(sectionName).Bind(options);
         }
 
         return options;
@@ -118,7 +123,7 @@ internal class FeatureEvaluation : IFeatureEvaluation
             if (x?.Priority == y?.Priority) return 0;
             if (x?.Priority == null) return 1;
             if (y?.Priority == null) return -1;
-            return x.Priority.CompareTo(y.Priority);
+            return x.Priority.Value.CompareTo(y.Priority.Value);
         }
     }
 }

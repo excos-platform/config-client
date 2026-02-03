@@ -31,9 +31,9 @@ public class OptionsBasedFeaturesTests
     {
         var provider = BuildServiceProvider(o => o.BuildFeature("TestFeature", "Tests")
             .WithFilter(nameof(ContextWithIdentifier.Market)).Matches("US").SaveFilter()
-            .Rollout<TestOptions>(100, (options, _) => options.Label = "XX")
+            .Rollout(100, """{"Test": {"Label": "XX"}}""")
             .Configure(f => f.Last().Priority = 2)
-            .Rollout<TestOptions>(100, (options, _) => options.Label = "YY")
+            .Rollout(100, """{"Test": {"Label": "YY"}}""")
             .Configure(f => f.Last().Priority = 1)
             .Save());
 
@@ -51,11 +51,11 @@ public class OptionsBasedFeaturesTests
     {
         var provider = BuildServiceProvider(o => o.BuildFeature("TestFeature")
             .WithFilter(nameof(ContextWithIdentifier.Market)).Matches("US").Or().Matches("UK").SaveFilter()
-            .Rollout<TestOptions>(75, (options, _) => options.Label = "XX")
+            .Rollout(75, """{"Test": {"Label": "XX"}}""")
             .Save()
             .BuildFeature("TestExperiment")
             .WithFilter(nameof(ContextWithIdentifier.AgeGroup)).InRange(new Range<int>(0, 5, RangeType.IncludeBoth)).SaveFilter()
-            .ABExperiment<TestOptions>((options, _) => options.Length = 5, (options, _) => options.Length = 10, nameof(ContextWithIdentifier.SessionId))
+            .ABExperiment("""{"Test": {"Length": 5}}""", """{"Test": {"Length": 10}}""", nameof(ContextWithIdentifier.SessionId))
             .Save());
 
         var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
@@ -76,11 +76,11 @@ public class OptionsBasedFeaturesTests
     {
         var provider = BuildServiceProvider(o => o.BuildFeature("Test1")
             .WithFilter(nameof(ContextWithIdentifier.Market)).Matches("US").Or().Matches("UK").SaveFilter()
-            .Rollout<TestOptions>(100, (options, _) => options.Label = "X1")
+            .Rollout(100, """{"Test": {"Label": "X1"}}""")
             .Save()
             .BuildFeature("Test2")
             .WithFilter(nameof(ContextWithIdentifier.Market)).Matches("EU").SaveFilter()
-            .Rollout<TestOptions>(75, (options, _) => options.Label = "X2")
+            .Rollout(75, """{"Test": {"Label": "X2"}}""")
             .Save());
 
         var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
