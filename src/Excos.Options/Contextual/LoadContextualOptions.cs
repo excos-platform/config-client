@@ -42,7 +42,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     {
         var configure = new ConfigureContextualOptions<TOptions>(_configurationSection);
 
-        await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
+        var variants = await _featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
+        foreach (var variant in variants)
         {
             configure.ConfigurationJsons.Add(variant.Configuration);
         }

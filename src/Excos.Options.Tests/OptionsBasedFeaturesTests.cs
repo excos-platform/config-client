@@ -40,7 +40,7 @@ public class OptionsBasedFeaturesTests
         var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var context = new ContextWithIdentifier { Market = "US", AgeGroup = 1 };
         var options = await contextual.GetAsync(context, default);
-        var variants = provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default).ToEnumerable().ToList();
+        var variants = (await provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default)).ToList();
 
         var metadata = Assert.Single(variants);
         Assert.Equal("TestFeature:Rollout_1", metadata.Id);
@@ -61,7 +61,7 @@ public class OptionsBasedFeaturesTests
         var contextual = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
         var context = new ContextWithIdentifier { Market = "US", AgeGroup = 1, UserId = "test", SessionId = "testSession" };
         var options = await contextual.GetAsync(context, default);
-        var variants = provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default).ToEnumerable().ToList();
+        var variants = (await provider.GetRequiredService<IFeatureEvaluation>().EvaluateFeaturesAsync(context, default)).ToList();
 
         Assert.Equal(2, variants.Count);
         Assert.Equal("TestFeature:Rollout_0", variants.ElementAt(0).Id);

@@ -4,7 +4,6 @@
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Abstractions;
 using Excos.Options.Utils;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,7 +43,8 @@ public static class FeatureEvaluationExtensions
         where TContext : IOptionsContext
     {
         var options = new TOptions();
-        await foreach (var variant in featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
+        var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
+        foreach (var variant in variants)
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant.Configuration))
@@ -65,9 +65,10 @@ internal class FeatureEvaluation : IFeatureEvaluation
         _featureProviders = featureProviders;
     }
 
-    public async IAsyncEnumerable<Variant> EvaluateFeaturesAsync<TContext>(TContext context, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
+        var results = new List<Variant>();
         foreach (var provider in _featureProviders)
         {
             var features = await provider.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
@@ -77,10 +78,11 @@ internal class FeatureEvaluation : IFeatureEvaluation
                 Variant? matchingVariant = TryFindMatchingVariant(context, feature);
                 if (matchingVariant != null)
                 {
-                    yield return matchingVariant;
+                    results.Add(matchingVariant);
                 }
             }
         }
+        return results;
     }
 
     private static Variant? TryFindMatchingVariant<TContext>(TContext context, Feature feature)

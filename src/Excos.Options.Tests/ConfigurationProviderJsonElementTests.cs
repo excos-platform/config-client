@@ -235,9 +235,9 @@ public class ConfigurationProviderJsonElementTests
         var featureEval = provider.GetRequiredService<IFeatureEvaluation>();
 
         // User that gets Treatment (hash > 0.5)
-        var variants = featureEval.EvaluateFeaturesAsync(
+        var variants = (await featureEval.EvaluateFeaturesAsync(
             new ContextWithIdentifier { UserId = "user-treatment-bucket" }, 
-            default).ToEnumerable().ToList();
+            default)).ToList();
 
         Assert.Single(variants);
         // The variant should have JsonElement configuration
