@@ -72,7 +72,7 @@ public static class ServiceCollectionExtensions
         // Use custom HTTP client factory if provided, otherwise register standard one
         if (options.HttpClientFactory != null)
         {
-            services.AddSingleton(options.HttpClientFactory);
+            services.AddSingleton<IHttpClientFactory>(options.HttpClientFactory);
         }
         else if (options.HttpMessageHandler != null)
         {

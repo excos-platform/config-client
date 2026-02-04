@@ -29,6 +29,12 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
         _options = options;
         _apiCaller = apiCaller;
         _logger = logger;
+
+        // Kick off background cache load if configured
+        if (options.CurrentValue.RequestFeaturesOnInitialization)
+        {
+            _ = RefreshCacheAsync(CancellationToken.None);
+        }
     }
 
     private bool IsNotInitialized => _cacheExpiration is null;
@@ -38,20 +44,20 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
     {
         if (IsNotInitialized)
         {
-            await RefreshCacheAsync().ConfigureAwait(false);
+            await RefreshCacheAsync(cancellationToken).ConfigureAwait(false);
         }
         else if (IsExpired)
         {
             // Fire and forget refresh for expired cache
-            _ = RefreshCacheAsync();
+            _ = RefreshCacheAsync(CancellationToken.None);
         }
 
         return _cachedFeatures;
     }
 
-    private async Task RefreshCacheAsync()
+    private async Task RefreshCacheAsync(CancellationToken cancellationToken)
     {
-        await _semaphore.WaitAsync().ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -61,7 +67,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
                 return;
             }
 
-            var (updated, growthBookFeatures) = await _apiCaller.GetFeaturesAsync().ConfigureAwait(false);
+            var (updated, growthBookFeatures) = await _apiCaller.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
 
             if (!updated && _cachedFeatures.Count > 0)
             {
