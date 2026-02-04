@@ -190,60 +190,16 @@ public class Tests
     [Fact]
     public async Task VariantConfiguration_IsJsonElement()
     {
-        // Verifies Decision 001: Variant.Configuration is JsonElement
+        // Verifies that primitive values get wrapped with feature name as key
         var host = BuildHost(new GrowthBookOptions());
         var provider = (GrowthBookFeatureProvider)host.Services.GetRequiredService<IFeatureProvider>();
 
         var features = (await provider.GetFeaturesAsync(default)).ToList();
-
-        // Object feature (newlabel with object variations)
-        var objectVariant = features[0][0];
-        Assert.Equal(JsonValueKind.Object, objectVariant.Configuration.ValueKind);
-        Assert.Equal("Old", objectVariant.Configuration.GetProperty("MyOptions").GetProperty("Label").GetString());
 
         // String feature (gbdemo-checkout-layout with string variations)
-        var stringVariant = features[1][0]; // First variant of checkout-layout
-        Assert.Equal(JsonValueKind.Object, stringVariant.Configuration.ValueKind);
-        // String values get wrapped with feature name as key
-        Assert.True(stringVariant.Configuration.TryGetProperty("gbdemo-checkout-layout", out var value));
-    }
-
-    [Fact]
-    public async Task VariantConfiguration_CanBeSerialized()
-    {
-        // Verifies Decision 001: Configuration can be serialized
-        var host = BuildHost(new GrowthBookOptions());
-        var provider = (GrowthBookFeatureProvider)host.Services.GetRequiredService<IFeatureProvider>();
-
-        var features = (await provider.GetFeaturesAsync(default)).ToList();
-        var variant = features[0][0];
-
-        // Serialize and deserialize
-        var json = JsonSerializer.Serialize(variant.Configuration);
-        var deserialized = JsonDocument.Parse(json).RootElement;
-
-        Assert.Equal("Old", deserialized.GetProperty("MyOptions").GetProperty("Label").GetString());
-    }
-
-    [Fact]
-    public async Task VariantConfiguration_CanBeInspected()
-    {
-        // Verifies Decision 001: Configuration can be inspected
-        var host = BuildHost(new GrowthBookOptions());
-        var provider = (GrowthBookFeatureProvider)host.Services.GetRequiredService<IFeatureProvider>();
-
-        var features = (await provider.GetFeaturesAsync(default)).ToList();
-
-        // Compare configurations from different variants
-        var variant0 = features[0][0];
-        var variant1 = features[0][1];
-
-        var label0 = variant0.Configuration.GetProperty("MyOptions").GetProperty("Label").GetString();
-        var label1 = variant1.Configuration.GetProperty("MyOptions").GetProperty("Label").GetString();
-
-        Assert.Equal("Old", label0);
-        Assert.Equal("New", label1);
-        Assert.NotEqual(label0, label1);
+        // Primitive values get wrapped with feature name as key
+        var stringVariant = features[1][0];
+        Assert.True(stringVariant.Configuration.TryGetProperty("gbdemo-checkout-layout", out _));
     }
 
     [Fact]

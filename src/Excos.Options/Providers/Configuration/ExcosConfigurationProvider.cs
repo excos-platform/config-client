@@ -54,7 +54,7 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     private async Task LoadAsync()
     {
         var variants = await _featureEvaluation.EvaluateFeaturesAsync(_context, _cts.Token).ConfigureAwait(false);
-        Data = (Dictionary<string, string?>)JsonElementConversion.ToConfigurationDictionary(variants);
+        Data = JsonElementConversion.ToConfigurationDictionary(variants);
         OnReload();
     }
 
