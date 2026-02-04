@@ -10,7 +10,7 @@ namespace Excos.Options.Utils;
 /// <summary>
 /// Utilities for converting between <see cref="JsonElement"/> and configuration formats.
 /// </summary>
-public static class JsonElementConversion
+internal static class JsonElementConversion
 {
     /// <summary>
     /// Converts a <see cref="JsonElement"/> to a configuration dictionary suitable for <see cref="IConfiguration"/>.
