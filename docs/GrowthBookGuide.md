@@ -108,9 +108,9 @@ Optionally, before integrating with Growthbook, you can test the Excos feature d
 
 ```csharp
 builder.Services.BuildFeature("TestRollout")
-    .Rollout<CatalogDisplayOptions>(
+    .Rollout(
         75 /*percent*/,
-        (options, _) => options.ItemsPerPage = 20,
+        """{ "CatalogDisplay": { "ItemsPerPage": 20 } }""",
         allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```
@@ -292,7 +292,7 @@ public class ExperimentationService : IExperimentationService
 
         if (assignment == null)
         {
-            await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(context, default(CancellationToken)))
+            foreach (var variant in await _featureEvaluation.EvaluateFeaturesAsync(context, default(CancellationToken)))
             {
                 assignment = new ExperimentationAssignment
                 {
@@ -453,9 +453,9 @@ I've created a simple A/A test (meaning no difference between control and treatm
 
 ```csharp
 builder.Services.BuildFeature("OfflineExperiment")
-    .ABExperiment<CatalogDisplayOptions>(
-        (_, _) => { },
-        (_, _) => { }, // no change A/A experiment
+    .ABExperiment(
+        """{ "CatalogDisplay": { "ItemsPerPage": 10 } }""",
+        """{ "CatalogDisplay": { "ItemsPerPage": 10 } }""", // no change A/A experiment
         allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```
