@@ -29,10 +29,10 @@ public class Variant
     public JsonElement Configuration { get; set; }
 
     /// <summary>
-    /// An optional priority.
-    /// If more than one variant is matched by filters and allocation,
-    /// the priority (lowest numeric value first) is used to determine which variant to pick.
-    /// A null priority is treated as lowest priority (variant is considered last).
+    /// An optional priority value for variant selection.
+    /// When multiple variants match filters and allocation, the priority determines which variant is selected.
+    /// Lower numeric values have higher priority (are evaluated first and selected over higher values).
+    /// A null priority is treated as the lowest priority (variant is evaluated last).
     /// </summary>
     public int? Priority { get; set; }
 }

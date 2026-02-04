@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 
 using System.Text.Json;
+using Excos.Options.Abstractions.Data;
 using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual.Provider;
@@ -12,23 +13,18 @@ internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextu
     where TOptions : class
 {
     private readonly string _configurationSection;
+    private readonly IEnumerable<Variant> _variants;
 
-    public ConfigureContextualOptions(string configurationSection)
+    public ConfigureContextualOptions(string configurationSection, IEnumerable<Variant> variants)
     {
         _configurationSection = configurationSection;
+        _variants = variants;
     }
-
-    public List<JsonElement> ConfigurationJsons { get; } = new(8);
 
     public void Configure(TOptions options)
     {
-        foreach (var json in ConfigurationJsons)
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(json))
-                .Build();
-            config.GetSection(_configurationSection).Bind(options);
-        }
+        var config = JsonElementConversion.MergeVariantConfigurations(_variants);
+        config.GetSection(_configurationSection).Bind(options);
     }
 
     public void Dispose()

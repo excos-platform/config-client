@@ -1,8 +1,8 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using System.Globalization;
 using System.Text.Json;
+using Excos.Options.Abstractions.Data;
 using Microsoft.Extensions.Configuration;
 
 namespace Excos.Options.Utils;
@@ -13,41 +13,32 @@ namespace Excos.Options.Utils;
 internal static class JsonElementConversion
 {
     /// <summary>
-    /// Converts a <see cref="JsonElement"/> to a configuration dictionary suitable for <see cref="IConfiguration"/>.
+    /// Converts multiple variant configurations to a merged configuration dictionary.
+    /// Later variants override earlier ones for the same keys.
     /// </summary>
-    /// <param name="json">The JSON element to convert.</param>
-    /// <returns>A dictionary with colon-delimited keys representing the configuration hierarchy.</returns>
-    public static IDictionary<string, string?> ToConfigurationDictionary(JsonElement json)
+    /// <param name="variants">The variants whose configurations should be merged.</param>
+    /// <returns>A merged dictionary with colon-delimited keys.</returns>
+    public static Dictionary<string, string?> ToConfigurationDictionary(IEnumerable<Variant> variants)
     {
         var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        VisitElement(json, string.Empty, result);
+        foreach (var variant in variants)
+        {
+            VisitElement(variant.Configuration, string.Empty, result);
+        }
         return result;
     }
 
     /// <summary>
-    /// Converts a <see cref="JsonElement"/> to a configuration dictionary with a key prefix.
-    /// For non-object values, the value is stored directly under the prefix.
-    /// For objects, properties are stored as prefix:property.
+    /// Merges multiple variant configurations into a single <see cref="IConfiguration"/> instance.
+    /// Later variants override earlier ones for the same keys.
     /// </summary>
-    /// <param name="json">The JSON element to convert.</param>
-    /// <param name="keyPrefix">The key prefix (e.g., feature name).</param>
-    /// <returns>A dictionary with colon-delimited keys representing the configuration hierarchy.</returns>
-    public static IDictionary<string, string?> ToConfigurationDictionary(JsonElement json, string keyPrefix)
+    /// <param name="variants">The variants whose configurations should be merged.</param>
+    /// <returns>An <see cref="IConfiguration"/> containing the merged configuration data.</returns>
+    public static IConfiguration MergeVariantConfigurations(IEnumerable<Variant> variants)
     {
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-
-        if (json.ValueKind == JsonValueKind.Object)
-        {
-            // For objects, properties become top-level (no prefix wrapping)
-            VisitElement(json, string.Empty, result);
-        }
-        else
-        {
-            // For non-objects, wrap with the prefix
-            VisitElement(json, keyPrefix, result);
-        }
-
-        return result;
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(ToConfigurationDictionary(variants))
+            .Build();
     }
 
     /// <summary>
@@ -59,24 +50,10 @@ internal static class JsonElementConversion
     /// <returns>A new JsonElement representing { "key": value }.</returns>
     public static JsonElement WrapInObject(string key, JsonElement value)
     {
-        using var doc = JsonDocument.Parse($"{{\"{key}\": {value.GetRawText()}}}");
+        // Use JsonSerializer to properly escape the key to prevent JSON injection
+        var escapedKey = JsonSerializer.Serialize(key);
+        using var doc = JsonDocument.Parse($"{{{escapedKey}: {value.GetRawText()}}}");
         return doc.RootElement.Clone();
-    }
-
-    /// <summary>
-    /// Converts multiple <see cref="JsonElement"/> configurations to a merged configuration dictionary.
-    /// Later elements override earlier ones for the same keys.
-    /// </summary>
-    /// <param name="jsonElements">The JSON elements to convert and merge.</param>
-    /// <returns>A merged dictionary with colon-delimited keys.</returns>
-    public static IDictionary<string, string?> ToConfigurationDictionary(IEnumerable<JsonElement> jsonElements)
-    {
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var json in jsonElements)
-        {
-            VisitElement(json, string.Empty, result);
-        }
-        return result;
     }
 
     /// <summary>
@@ -155,6 +132,7 @@ internal static class JsonElementConversion
         // Check if this is an array (children have numeric keys starting from 0)
         if (IsArraySection(children))
         {
+            // int.Parse is safe here because IsArraySection validates all keys are numeric
             var arrayValues = children
                 .OrderBy(c => int.Parse(c.Key))
                 .Select(BuildJsonElement)

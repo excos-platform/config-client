@@ -40,14 +40,7 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     private async ValueTask<IConfigureContextualOptions<TOptions>> GetConfigurationForFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
-        var configure = new ConfigureContextualOptions<TOptions>(_configurationSection);
-
         var variants = await _featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
-        foreach (var variant in variants)
-        {
-            configure.ConfigurationJsons.Add(variant.Configuration);
-        }
-
-        return configure;
+        return new ConfigureContextualOptions<TOptions>(_configurationSection, variants);
     }
 }

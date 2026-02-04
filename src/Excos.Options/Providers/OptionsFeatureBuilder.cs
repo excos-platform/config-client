@@ -85,6 +85,25 @@ public sealed class OptionsFeatureFilterBuilder
 public static class OptionsFeatureProviderBuilderExtensions
 {
     /// <summary>
+    /// Parses a JSON configuration string and returns a cloned JsonElement.
+    /// </summary>
+    /// <param name="json">The JSON string to parse.</param>
+    /// <param name="parameterName">The parameter name for error messages.</param>
+    /// <returns>A cloned JsonElement representing the parsed JSON.</returns>
+    /// <exception cref="ArgumentException">Thrown when the JSON string is malformed.</exception>
+    private static JsonElement ParseConfigurationJson(string json, string parameterName)
+    {
+        try
+        {
+            return JsonDocument.Parse(json).RootElement.Clone();
+        }
+        catch (JsonException ex)
+        {
+            throw new ArgumentException($"The provided JSON configuration is not valid: {ex.Message}", parameterName, ex);
+        }
+    }
+
+    /// <summary>
     /// Adds the Excos Options framework based feature provider to the services collection.
     /// </summary>
     /// <param name="services">Service collection.</param>
@@ -215,6 +234,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="configurationJsonB">JSON configuration string for variant B (50% of traffic).</param>
     /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
+    /// <exception cref="ArgumentException">Thrown when the JSON configuration string is malformed.</exception>
     public static OptionsFeatureBuilder ABExperiment(this OptionsFeatureBuilder optionsFeatureBuilder, string configurationJsonA, string configurationJsonB, string allocationUnit = "UserId")
     {
         optionsFeatureBuilder.Feature.Add(new Variant
@@ -227,7 +247,7 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance,
                     new Allocation(new Range<double>(0, 0.5, RangeType.IncludeStart)))
                 ],
-            Configuration = JsonDocument.Parse(configurationJsonA).RootElement.Clone(),
+            Configuration = ParseConfigurationJson(configurationJsonA, nameof(configurationJsonA)),
         });
         optionsFeatureBuilder.Feature.Add(new Variant
         {
@@ -239,7 +259,7 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance,
                     new Allocation(new Range<double>(0.5, 1, RangeType.IncludeBoth)))
                 ],
-            Configuration = JsonDocument.Parse(configurationJsonB).RootElement.Clone(),
+            Configuration = ParseConfigurationJson(configurationJsonB, nameof(configurationJsonB)),
         });
 
         return optionsFeatureBuilder;
@@ -253,6 +273,7 @@ public static class OptionsFeatureProviderBuilderExtensions
     /// <param name="configurationJson">JSON configuration string for the rollout variant.</param>
     /// <param name="allocationUnit">Property of the context used for allocation.</param>
     /// <returns>Builder.</returns>
+    /// <exception cref="ArgumentException">Thrown when the JSON configuration string is malformed.</exception>
     public static OptionsFeatureBuilder Rollout(this OptionsFeatureBuilder optionsFeatureBuilder, double percentage, string configurationJson, string allocationUnit = "UserId")
     {
         optionsFeatureBuilder.Feature.Add(new Variant
@@ -265,7 +286,7 @@ public static class OptionsFeatureProviderBuilderExtensions
                     XxHashAllocation.Instance, 
                     Allocation.Percentage(percentage))
                 ],
-            Configuration = JsonDocument.Parse(configurationJson).RootElement.Clone(),
+            Configuration = ParseConfigurationJson(configurationJson, nameof(configurationJson)),
         });
 
         return optionsFeatureBuilder;

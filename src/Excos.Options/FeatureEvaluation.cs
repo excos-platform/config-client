@@ -44,13 +44,9 @@ public static class FeatureEvaluationExtensions
     {
         var options = new TOptions();
         var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
-        foreach (var variant in variants)
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant.Configuration))
-                .Build();
-            config.GetSection(sectionName).Bind(options);
-        }
+        
+        var config = JsonElementConversion.MergeVariantConfigurations(variants);
+        config.GetSection(sectionName).Bind(options);
 
         return options;
     }

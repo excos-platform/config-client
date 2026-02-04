@@ -16,6 +16,8 @@ public class DictionaryOptionsContext : IOptionsContext
 
     /// <summary>
     /// Creates a new instance with no context values.
+    /// When <see cref="PopulateReceiver{T}(T)"/> is called, no values will be received.
+    /// This is useful for configuration scenarios where no user-specific context is needed.
     /// </summary>
     public DictionaryOptionsContext()
     {
@@ -25,7 +27,8 @@ public class DictionaryOptionsContext : IOptionsContext
     /// <summary>
     /// Creates a new instance with the specified key-value pairs.
     /// </summary>
-    /// <param name="values">Dictionary of context values.</param>
+    /// <param name="values">Dictionary of context values. Must not be null; use the parameterless constructor for empty context.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values"/> is null.</exception>
     public DictionaryOptionsContext(IDictionary<string, string> values)
     {
         _values = values ?? throw new ArgumentNullException(nameof(values));

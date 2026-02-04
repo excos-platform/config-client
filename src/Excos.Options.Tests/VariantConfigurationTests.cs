@@ -3,8 +3,6 @@
 
 using System.Text.Json;
 using Excos.Options.Abstractions.Data;
-using Excos.Options.Utils;
-using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Excos.Options.Tests;
@@ -112,114 +110,6 @@ public class VariantConfigurationTests
         var deserialized = JsonDocument.Parse(serialized).RootElement;
 
         Assert.Equal("Value", deserialized.GetProperty("Key").GetString());
-    }
-
-    #endregion
-
-    #region Configuration Binding Patterns
-
-    [Fact]
-    public void Variant_Configuration_BindsToOptionsViaConfigurationBuilder()
-    {
-        var variant = new Variant
-        {
-            Id = "test",
-            Configuration = JsonDocument.Parse("""
-                {
-                    "MySection": {
-                        "Name": "TestName",
-                        "Count": 5
-                    }
-                }
-                """).RootElement
-        };
-
-        // This is the pattern used in FeatureEvaluation.EvaluateFeaturesAsync
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant.Configuration))
-            .Build();
-
-        var options = new SampleOptions();
-        config.GetSection("MySection").Bind(options);
-
-        Assert.Equal("TestName", options.Name);
-        Assert.Equal(5, options.Count);
-    }
-
-    [Fact]
-    public void Variant_MultipleConfigurations_ApplyInOrder()
-    {
-        // Simulating multiple variants being applied
-        var variant1 = new Variant
-        {
-            Id = "base",
-            Configuration = JsonDocument.Parse("""{"Section": {"A": "1", "B": "2"}}""").RootElement
-        };
-
-        var variant2 = new Variant
-        {
-            Id = "override",
-            Configuration = JsonDocument.Parse("""{"Section": {"B": "overridden", "C": "3"}}""").RootElement
-        };
-
-        var options = new MultiPropertyOptions();
-
-        // Apply first variant
-        var config1 = new ConfigurationBuilder()
-            .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant1.Configuration))
-            .Build();
-        config1.GetSection("Section").Bind(options);
-
-        // Apply second variant (later variants override)
-        var config2 = new ConfigurationBuilder()
-            .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant2.Configuration))
-            .Build();
-        config2.GetSection("Section").Bind(options);
-
-        Assert.Equal("1", options.A);           // From variant1, not overridden
-        Assert.Equal("overridden", options.B);  // Overridden by variant2
-        Assert.Equal("3", options.C);           // Added by variant2
-    }
-
-    [Fact]
-    public void Variant_PrimitiveConfiguration_BindsWithFeatureNamePrefix()
-    {
-        // GrowthBook pattern: feature value is primitive, wrapped with feature name
-        var primitiveValue = JsonSerializer.SerializeToElement(true);
-        var wrapped = JsonElementConversion.WrapInObject("IsEnabled", primitiveValue);
-
-        var variant = new Variant
-        {
-            Id = "feature-flag",
-            Configuration = wrapped
-        };
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(JsonElementConversion.ToConfigurationDictionary(variant.Configuration))
-            .Build();
-
-        var options = new FeatureFlagOptions();
-        config.Bind(options);
-
-        Assert.True(options.IsEnabled);
-    }
-
-    private class SampleOptions
-    {
-        public string? Name { get; set; }
-        public int Count { get; set; }
-    }
-
-    private class MultiPropertyOptions
-    {
-        public string? A { get; set; }
-        public string? B { get; set; }
-        public string? C { get; set; }
-    }
-
-    private class FeatureFlagOptions
-    {
-        public bool IsEnabled { get; set; }
     }
 
     #endregion

@@ -10,16 +10,19 @@ namespace Excos.Options.GrowthBook;
 
 /// <summary>
 /// GrowthBook feature provider with integrated caching.
+/// Implements <see cref="IDisposable"/> to properly clean up resources.
 /// </summary>
-internal class GrowthBookFeatureProvider : IFeatureProvider
+internal class GrowthBookFeatureProvider : IFeatureProvider, IDisposable
 {
     private readonly IOptionsMonitor<GrowthBookOptions> _options;
     private readonly GrowthBookApiCaller _apiCaller;
     private readonly ILogger<GrowthBookFeatureProvider> _logger;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly CancellationTokenSource _cts = new();
 
     private List<Feature> _cachedFeatures = new();
     private DateTimeOffset? _cacheExpiration;
+    private bool _disposed;
 
     public GrowthBookFeatureProvider(
         IOptionsMonitor<GrowthBookOptions> options,
@@ -33,7 +36,7 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
         // Kick off background cache load if configured
         if (options.CurrentValue.RequestFeaturesOnInitialization)
         {
-            _ = RefreshCacheAsync(CancellationToken.None);
+            _ = RefreshCacheAsync(_cts.Token);
         }
     }
 
@@ -42,14 +45,19 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
 
     public async ValueTask<IEnumerable<Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // Link the provided token with our disposal token
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cts.Token);
+
         if (IsNotInitialized)
         {
-            await RefreshCacheAsync(cancellationToken).ConfigureAwait(false);
+            await RefreshCacheAsync(linkedCts.Token).ConfigureAwait(false);
         }
         else if (IsExpired)
         {
-            // Fire and forget refresh for expired cache
-            _ = RefreshCacheAsync(CancellationToken.None);
+            // Fire and forget refresh for expired cache, but use disposal token
+            _ = RefreshCacheAsync(_cts.Token);
         }
 
         return _cachedFeatures;
@@ -87,6 +95,10 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
 
             _logger.LogInformation("Loaded GrowthBook features: {features}", _cachedFeatures.Select(static f => $"{f.Name}[{f.Count}]"));
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Expected during disposal or caller cancellation - don't log as error
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to request features from GrowthBook");
@@ -95,5 +107,18 @@ internal class GrowthBookFeatureProvider : IFeatureProvider
         {
             _semaphore.Release();
         }
+    }
+
+    /// <summary>
+    /// Disposes resources used by this provider.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _cts.Cancel();
+        _semaphore.Dispose();
+        _cts.Dispose();
     }
 }
