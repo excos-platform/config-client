@@ -108,9 +108,9 @@ Optionally, before integrating with Growthbook, you can test the Excos feature d
 
 ```csharp
 builder.Services.BuildFeature("TestRollout")
-    .Rollout<CatalogDisplayOptions>(
+    .Rollout(
         75 /*percent*/,
-        (options, _) => options.ItemsPerPage = 20,
+        """{ "CatalogDisplay": { "ItemsPerPage": 20 } }""",
         allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```
@@ -119,14 +119,47 @@ builder.Services.BuildFeature("TestRollout")
 
 You can [self-host](https://docs.growthbook.io/self-host) GrowthBook with Docker or use the free tier of their cloud offering to get started.
 
-Add the following to your `Program.cs` in order to add the GrowthBook feature provider and configure it through `appsettings.json`:
+There are two ways to configure GrowthBook integration:
+
+### Option 1: Using Host Builder (Recommended)
+
+This approach sets up both configuration and contextual options with a shared feature provider:
 
 ```csharp
-builder.Services.ConfigureExcosWithGrowthBook();
-builder.Services.AddOptions<GrowthBookOptions>().BindConfiguration("GrowthBook");
+builder.Host.ConfigureExcosWithGrowthBook(options =>
+{
+    options.ApiHost = new Uri("http://localhost:3100");
+    options.ClientKey = "sdk-####";
+});
 ```
 
-Next visit your GrowthBook instance and create a new connection - go to "SDK Configuration" > "SDK Connections", click the Add button, provide a friendly name, choose "Other" SDK type and the target environment. Copy the connection details and place them in your `appsettings.json`.
+This single call:
+- Adds GrowthBook features as a configuration source (for `IConfiguration` binding)
+- Registers the feature provider for contextual options (for `IContextualOptions<T>`)
+- Uses a single shared provider instance for both
+
+### Option 2: Using Dependency Injection
+
+For scenarios requiring DI-managed HTTP clients and logging:
+
+```csharp
+builder.Services.ConfigureExcosWithGrowthBook(options =>
+{
+    options.ApiHost = new Uri("http://localhost:3100");
+    options.ClientKey = "sdk-####";
+});
+```
+
+Or with configuration binding:
+
+```csharp
+builder.Services.ConfigureExcosWithGrowthBook(options =>
+{
+    builder.Configuration.GetSection("GrowthBook").Bind(options);
+});
+```
+
+With this approach, add your settings to `appsettings.json`:
 
 ```json
   "GrowthBook": {
@@ -134,6 +167,10 @@ Next visit your GrowthBook instance and create a new connection - go to "SDK Con
     "ClientKey": "sdk-####"
   }
 ```
+
+### Getting your SDK Connection
+
+Visit your GrowthBook instance and create a new connection - go to "SDK Configuration" > "SDK Connections", click the Add button, provide a friendly name, choose "Other" SDK type and the target environment. Copy the connection details.
 
 ## Setting up the experiment in GrowthBook
 
@@ -255,7 +292,7 @@ public class ExperimentationService : IExperimentationService
 
         if (assignment == null)
         {
-            await foreach (var variant in _featureEvaluation.EvaluateFeaturesAsync(context, default(CancellationToken)))
+            foreach (var variant in await _featureEvaluation.EvaluateFeaturesAsync(context, default(CancellationToken)))
             {
                 assignment = new ExperimentationAssignment
                 {
@@ -416,9 +453,9 @@ I've created a simple A/A test (meaning no difference between control and treatm
 
 ```csharp
 builder.Services.BuildFeature("OfflineExperiment")
-    .ABExperiment<CatalogDisplayOptions>(
-        (_, _) => { },
-        (_, _) => { }, // no change A/A experiment
+    .ABExperiment(
+        """{ "CatalogDisplay": { "ItemsPerPage": 10 } }""",
+        """{ "CatalogDisplay": { "ItemsPerPage": 10 } }""", // no change A/A experiment
         allocationUnit: nameof(StoreOptionsContext.SessionId))
     .Save();
 ```

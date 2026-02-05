@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Excos.Options.GrowthBook;
 
@@ -15,41 +16,86 @@ namespace Excos.Options.GrowthBook;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Configures the integration between Excos.Options.Contextual and GrowthBook.
+    /// Configures the integration between Excos and GrowthBook for both configuration and contextual options.
+    /// Creates a shared feature provider instance used by both systems.
     /// </summary>
-    public static IServiceCollection ConfigureExcosWithGrowthBook(this IServiceCollection services)
+    /// <param name="hostBuilder">The host builder.</param>
+    /// <param name="configure">Callback to configure GrowthBook options.</param>
+    /// <returns>The host builder for chaining.</returns>
+    public static IHostBuilder ConfigureExcosWithGrowthBook(this IHostBuilder hostBuilder, Action<GrowthBookOptions> configure)
     {
+        ArgumentNullException.ThrowIfNull(hostBuilder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new GrowthBookOptions();
+        configure(options);
+
+        // Create the shared feature provider
+        var featureProvider = GrowthBookConfigurationBuilderExtensions.CreateFeatureProvider(options);
+
+        // Add GrowthBook as a configuration source
+        hostBuilder.ConfigureAppConfiguration((_, builder) =>
+        {
+            builder.AddExcosGrowthBookConfiguration(featureProvider, options);
+        });
+
+        // Register the shared provider for contextual options
+        hostBuilder.ConfigureServices((_, services) =>
+        {
+            services.AddSingleton<IFeatureProvider>(featureProvider);
+        });
+
+        return hostBuilder;
+    }
+
+    /// <summary>
+    /// Configures the integration between Excos.Options.Contextual and GrowthBook using dependency injection.
+    /// Use this when you need DI-managed HTTP clients and logging.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">Callback to configure GrowthBook options.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection ConfigureExcosWithGrowthBook(this IServiceCollection services, Action<GrowthBookOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new GrowthBookOptions();
+        configure(options);
+
         services.AddOptions<GrowthBookOptions>()
-            .Validate(options => !string.IsNullOrEmpty(options.ClientKey));
+            .Configure(configure)
+            .Validate(opts => !string.IsNullOrEmpty(opts.ClientKey));
 
         // Filter out the HttpClient logs for this library
         services.AddLogging(builder => builder.AddFilter((_, category, _) => category?.StartsWith($"System.Net.Http.HttpClient.{nameof(GrowthBook)}") != true));
 
-        services.AddHttpClient(nameof(GrowthBook));
-        services.AddSingleton<GrowthBookApiCaller>();
-        services.AddSingleton<GrowthBookFeatureCache>();
-        services.AddHostedService(services => services.GetRequiredService<GrowthBookFeatureCache>()); // register cache as a service to get initialized on startup
-        services.TryAddSingleton<GrowthBookConfigurationSource>(); // if none has been registered yet we register an empty one
+        // Register GrowthBookApiCaller with appropriate IHttpClientFactory
+        // Use custom factory from options if provided, otherwise use DI-registered factory
+        if (options.HttpClientFactory != null)
+        {
+            var httpClientFactory = options.HttpClientFactory;
+            services.AddSingleton(sp => new GrowthBookApiCaller(
+                httpClientFactory,
+                sp.GetRequiredService<ILogger<GrowthBookApiCaller>>(),
+                sp.GetRequiredService<IOptionsMonitor<GrowthBookOptions>>()));
+        }
+        else if (options.HttpMessageHandler != null)
+        {
+            var httpClientFactory = new SimpleHttpClientFactory(options.HttpMessageHandler);
+            services.AddSingleton(sp => new GrowthBookApiCaller(
+                httpClientFactory,
+                sp.GetRequiredService<ILogger<GrowthBookApiCaller>>(),
+                sp.GetRequiredService<IOptionsMonitor<GrowthBookOptions>>()));
+        }
+        else
+        {
+            services.AddHttpClient(nameof(GrowthBook));
+            services.AddSingleton<GrowthBookApiCaller>();
+        }
+
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureProvider), typeof(GrowthBookFeatureProvider), ServiceLifetime.Singleton));
 
         return services;
-    }
-
-    /// <summary>
-    /// Configures the integration between Excos.Options.Contextual and GrowthBook as well as registering a Configuration provider for GrowthBook features' default values.
-    /// </summary>
-    public static IHostBuilder ConfigureExcosWithGrowthBook(this IHostBuilder hostBuilder)
-    {
-        var growthBookConfigurationSource = new GrowthBookConfigurationSource();
-        hostBuilder.ConfigureAppConfiguration((_, builder) =>
-        {
-            builder.Add(growthBookConfigurationSource);
-        });
-        hostBuilder.ConfigureServices((_, services) =>
-        {
-            services.AddSingleton(growthBookConfigurationSource);
-            services.ConfigureExcosWithGrowthBook();
-        });
-        return hostBuilder;
     }
 }

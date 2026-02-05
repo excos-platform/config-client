@@ -31,16 +31,16 @@ namespace Excos.Options.GrowthBook
             _options = options;
         }
 
-        public async Task<(bool updated, IDictionary<string, Feature> features)> GetFeaturesAsync()
+        public async Task<(bool updated, IDictionary<string, Feature> features)> GetFeaturesAsync(CancellationToken cancellationToken = default)
         {
-            await _semaphore.WaitAsync().ConfigureAwait(false);
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
                 var options = _options.CurrentValue;
                 var httpClient = _httpClientFactory.CreateClient(nameof(GrowthBook));
                 var request = new HttpRequestMessage(HttpMethod.Get, new Uri(options.ApiHost, $"/api/features/{options.ClientKey}"));
-                var response = await httpClient.SendAsync(request).ConfigureAwait(false);
+                var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -48,8 +48,8 @@ namespace Excos.Options.GrowthBook
                     return (false, _growthBookFeatures ?? EmptyFeatures);
                 }
 
-                var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                var responseJson = await JsonDocument.ParseAsync(responseStream).ConfigureAwait(false);
+                var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                var responseJson = await JsonDocument.ParseAsync(responseStream, default, cancellationToken).ConfigureAwait(false);
 
                 // check if it has changed since the last fetch, if not, return the cached features
                 var dateUpdated = responseJson.RootElement.GetProperty("dateUpdated").GetDateTimeOffset();

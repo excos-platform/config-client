@@ -6,8 +6,6 @@ using Excos.Options.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Excos.Options.GrowthBook.Tests;
@@ -178,9 +176,10 @@ public class Tests
         Assert.Equal(3, features.Count);
 
         Assert.Equal("newlabel", features[0].Name);
-        Assert.Equal(2, features[0].Count);
+        Assert.Equal(3, features[0].Count); // 2 rule variants + 1 default variant
         Assert.Equal("label:0", features[0][0].Id);
         Assert.Equal("label:1", features[0][1].Id);
+        Assert.Equal("newlabel:default", features[0][2].Id);
         Assert.Equal(3, features[0][0].Filters.Count()); // attribute filter + allocation + namespace
 
         Assert.Equal("gbdemo-checkout-layout", features[1].Name);
@@ -189,12 +188,33 @@ public class Tests
     }
 
     [Fact]
-    public async Task ConfigurationIsSetUp()
+    public async Task VariantConfiguration_IsJsonElement()
     {
+        // Verifies that primitive values get wrapped with feature name as key
         var host = BuildHost(new GrowthBookOptions());
-        await host.StartAsync();
-        var config = host.Services.GetRequiredService<IConfiguration>();
+        var provider = (GrowthBookFeatureProvider)host.Services.GetRequiredService<IFeatureProvider>();
 
+        var features = (await provider.GetFeaturesAsync(default)).ToList();
+
+        // String feature (gbdemo-checkout-layout with string variations)
+        // Primitive values get wrapped with feature name as key
+        var stringVariant = features[1][0];
+        Assert.True(stringVariant.Configuration.TryGetProperty("gbdemo-checkout-layout", out _));
+    }
+
+    [Fact]
+    public void ConfigurationIsSetUp()
+    {
+        // Use the new AddExcosGrowthBookConfiguration extension for configuration scenarios
+        var config = new ConfigurationBuilder()
+            .AddExcosGrowthBookConfiguration(options =>
+            {
+                options.ClientKey = "test-key";
+                options.HttpClientFactory = new MockHttpClientFactory(new MockHandler(Payload));
+            })
+            .Build();
+
+        // Default values are now included as variants and loaded into configuration
         Assert.Equal("Old", config.GetValue<string>("MyOptions:Label"));
         Assert.Equal("current", config.GetValue<string>("gbdemo-checkout-layout"));
     }
@@ -253,32 +273,20 @@ public class Tests
 
     private IHost BuildHost(GrowthBookOptions options)
     {
+        // For testing, we inject the mock HTTP client factory via options
+        options.HttpClientFactory = new MockHttpClientFactory(new MockHandler(Payload));
+
         var builder = Host.CreateDefaultBuilder()
-            .ConfigureExcosWithGrowthBook()
-            .ConfigureServices((_, services) =>
+            .ConfigureExcosWithGrowthBook(opts =>
             {
-                services.AddSingleton<IOptionsMonitor<GrowthBookOptions>>(_ => new OptionsMonitor<GrowthBookOptions>(options));
-                services.AddSingleton<ILogger<GrowthBookFeatureProvider>, MockLogger<GrowthBookFeatureProvider>>();
-                services.AddSingleton<IHttpClientFactory>(_ => new MockHttpClientFactory(new MockHandler(Payload)));
+                opts.ClientKey = string.IsNullOrEmpty(options.ClientKey) ? "test-key" : options.ClientKey;
+                opts.ApiHost = options.ApiHost;
+                opts.CacheDuration = options.CacheDuration;
+                opts.RequestFeaturesOnInitialization = options.RequestFeaturesOnInitialization;
+                opts.HttpClientFactory = options.HttpClientFactory;
             });
 
         return builder.Build();
-    }
-
-    private class MockLogger<T> : ILogger<T>
-    {
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
-        public bool IsEnabled(LogLevel logLevel) => true;
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-    }
-
-    private class OptionsMonitor<T> : IOptionsMonitor<T>
-    {
-        private readonly T _value;
-        public OptionsMonitor(T value) => _value = value;
-        public T CurrentValue => _value;
-        public T Get(string? name) => _value;
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
     }
 
     private class MockHttpClientFactory : IHttpClientFactory

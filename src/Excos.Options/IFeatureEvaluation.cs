@@ -18,7 +18,7 @@ namespace Excos.Options
         /// <param name="context">Context.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Selected variants.</returns>
-        IAsyncEnumerable<Variant> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
+        ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
             where TContext : IOptionsContext;
     }
 }

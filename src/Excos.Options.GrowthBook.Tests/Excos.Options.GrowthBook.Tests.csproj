@@ -7,6 +7,11 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <!-- Do not warn about contextual being an experimental API -->
+    <NoWarn>EXTEXP0001;EXTEXP0017</NoWarn>
+    
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>

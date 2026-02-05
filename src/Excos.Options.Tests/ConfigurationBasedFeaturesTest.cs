@@ -103,17 +103,7 @@ public class ConfigurationBasedFeaturesTest
             }
         }
         """;
-        var configuration = new ConfigurationBuilder()
-            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appsettings)))
-            .Build();
-
-        var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
-        services.ConfigureExcos<TestOptions>("Test");
-        services.ConfigureExcosFeatures("Features");
-
-        var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
-
+        var provider = BuildServiceProvider(appsettings);
         var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
 
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
@@ -165,17 +155,7 @@ public class ConfigurationBasedFeaturesTest
             }
         }
         """;
-        var configuration = new ConfigurationBuilder()
-            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appsettings)))
-            .Build();
-
-        var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
-        services.ConfigureExcos<TestOptions>("Test");
-        services.ConfigureExcosFeatures("Features");
-
-        var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
-
+        var provider = BuildServiceProvider(appsettings);
         var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
 
         var options = await contextualOptions.GetAsync(new ContextWithIdentifier
@@ -191,5 +171,147 @@ public class ConfigurationBasedFeaturesTest
     {
         public int Size { get; set; }
         public string Label { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public async Task Priority_ExplicitPriority_LowerValueWins()
+    {
+        const string appsettings =
+        """
+        {
+            "Features": {
+                "PriorityTest": {
+                    "Variants": {
+                        "Low": {
+                            "Allocation": "100%",
+                            "Priority": 10,
+                            "Settings": { "Test": { "Label": "LowPriority" } }
+                        },
+                        "High": {
+                            "Allocation": "100%",
+                            "Priority": 1,
+                            "Settings": { "Test": { "Label": "HighPriority" } }
+                        }
+                    }
+                }
+            }
+        }
+        """;
+
+        var provider = BuildServiceProvider(appsettings);
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
+
+        var options = await contextualOptions.GetAsync(new ContextWithIdentifier { UserId = "anyone" }, default);
+
+        Assert.Equal("HighPriority", options.Label);
+    }
+
+    [Fact]
+    public async Task Priority_ImplicitPriority_MoreFiltersWins()
+    {
+        // Variant with more filters gets implicit higher priority (1024 - filterCount)
+        const string appsettings =
+        """
+        {
+            "Features": {
+                "ImplicitPriorityTest": {
+                    "Variants": {
+                        "General": {
+                            "Allocation": "100%",
+                            "Settings": { "Test": { "Label": "General" } }
+                        },
+                        "Specific": {
+                            "Allocation": "100%",
+                            "Filters": { "Market": "US" },
+                            "Settings": { "Test": { "Label": "Specific" } }
+                        }
+                    }
+                }
+            }
+        }
+        """;
+
+        var provider = BuildServiceProvider(appsettings);
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
+
+        var options = await contextualOptions.GetAsync(new ContextWithIdentifier { UserId = "user", Market = "US" }, default);
+
+        Assert.Equal("Specific", options.Label);
+    }
+
+    [Fact]
+    public async Task Allocation_InvalidAllocation_VariantSkipped()
+    {
+        const string appsettings =
+        """
+        {
+            "Features": {
+                "InvalidAllocationTest": {
+                    "Variants": {
+                        "Invalid": {
+                            "Allocation": "notvalid",
+                            "Settings": { "Test": { "Label": "Invalid" } }
+                        },
+                        "Valid": {
+                            "Allocation": "100%",
+                            "Settings": { "Test": { "Label": "Valid" } }
+                        }
+                    }
+                }
+            }
+        }
+        """;
+
+        var provider = BuildServiceProvider(appsettings);
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
+
+        var options = await contextualOptions.GetAsync(new ContextWithIdentifier { UserId = "user" }, default);
+
+        Assert.Equal("Valid", options.Label);
+    }
+
+    [Fact]
+    public async Task Allocation_ZeroPercent_VariantSkipped()
+    {
+        const string appsettings =
+        """
+        {
+            "Features": {
+                "ZeroAllocationTest": {
+                    "Variants": {
+                        "Zero": {
+                            "Allocation": "0%",
+                            "Settings": { "Test": { "Label": "Zero" } }
+                        },
+                        "Full": {
+                            "Allocation": "100%",
+                            "Settings": { "Test": { "Label": "Full" } }
+                        }
+                    }
+                }
+            }
+        }
+        """;
+
+        var provider = BuildServiceProvider(appsettings);
+        var contextualOptions = provider.GetRequiredService<IContextualOptions<TestOptions, ContextWithIdentifier>>();
+
+        var options = await contextualOptions.GetAsync(new ContextWithIdentifier { UserId = "user" }, default);
+
+        Assert.Equal("Full", options.Label);
+    }
+
+    private IServiceProvider BuildServiceProvider(string appsettings)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appsettings)))
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.ConfigureExcos<TestOptions>("Test");
+        services.ConfigureExcosFeatures("Features");
+
+        return services.BuildServiceProvider();
     }
 }

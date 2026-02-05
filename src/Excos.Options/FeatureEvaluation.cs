@@ -3,7 +3,8 @@
 
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Abstractions;
-using System.Runtime.CompilerServices;
+using Excos.Options.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,10 +43,10 @@ public static class FeatureEvaluationExtensions
         where TContext : IOptionsContext
     {
         var options = new TOptions();
-        await foreach (var variant in featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false))
-        {
-            variant.Configuration.Configure(options, sectionName);
-        }
+        var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
+        
+        var config = JsonElementConversion.MergeVariantConfigurations(variants);
+        config.GetSection(sectionName).Bind(options);
 
         return options;
     }
@@ -60,9 +61,10 @@ internal class FeatureEvaluation : IFeatureEvaluation
         _featureProviders = featureProviders;
     }
 
-    public async IAsyncEnumerable<Variant> EvaluateFeaturesAsync<TContext>(TContext context, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<Variant>> EvaluateFeaturesAsync<TContext>(TContext context, CancellationToken cancellationToken)
         where TContext : IOptionsContext
     {
+        var results = new List<Variant>();
         foreach (var provider in _featureProviders)
         {
             var features = await provider.GetFeaturesAsync(cancellationToken).ConfigureAwait(false);
@@ -72,10 +74,11 @@ internal class FeatureEvaluation : IFeatureEvaluation
                 Variant? matchingVariant = TryFindMatchingVariant(context, feature);
                 if (matchingVariant != null)
                 {
-                    yield return matchingVariant;
+                    results.Add(matchingVariant);
                 }
             }
         }
+        return results;
     }
 
     private static Variant? TryFindMatchingVariant<TContext>(TContext context, Feature feature)
@@ -118,7 +121,7 @@ internal class FeatureEvaluation : IFeatureEvaluation
             if (x?.Priority == y?.Priority) return 0;
             if (x?.Priority == null) return 1;
             if (y?.Priority == null) return -1;
-            return x.Priority.CompareTo(y.Priority);
+            return x.Priority.Value.CompareTo(y.Priority.Value);
         }
     }
 }
