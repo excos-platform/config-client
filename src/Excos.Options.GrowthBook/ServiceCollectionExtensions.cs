@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Excos.Options.GrowthBook;
 
@@ -69,21 +70,30 @@ public static class ServiceCollectionExtensions
         // Filter out the HttpClient logs for this library
         services.AddLogging(builder => builder.AddFilter((_, category, _) => category?.StartsWith($"System.Net.Http.HttpClient.{nameof(GrowthBook)}") != true));
 
-        // Use custom HTTP client factory if provided, otherwise register standard one
+        // Register GrowthBookApiCaller with appropriate IHttpClientFactory
+        // Use custom factory from options if provided, otherwise use DI-registered factory
         if (options.HttpClientFactory != null)
         {
-            services.AddSingleton<IHttpClientFactory>(options.HttpClientFactory);
+            var httpClientFactory = options.HttpClientFactory;
+            services.AddSingleton(sp => new GrowthBookApiCaller(
+                httpClientFactory,
+                sp.GetRequiredService<ILogger<GrowthBookApiCaller>>(),
+                sp.GetRequiredService<IOptionsMonitor<GrowthBookOptions>>()));
         }
         else if (options.HttpMessageHandler != null)
         {
-            services.AddSingleton<IHttpClientFactory>(new SimpleHttpClientFactory(options.HttpMessageHandler));
+            var httpClientFactory = new SimpleHttpClientFactory(options.HttpMessageHandler);
+            services.AddSingleton(sp => new GrowthBookApiCaller(
+                httpClientFactory,
+                sp.GetRequiredService<ILogger<GrowthBookApiCaller>>(),
+                sp.GetRequiredService<IOptionsMonitor<GrowthBookOptions>>()));
         }
         else
         {
             services.AddHttpClient(nameof(GrowthBook));
+            services.AddSingleton<GrowthBookApiCaller>();
         }
 
-        services.AddSingleton<GrowthBookApiCaller>();
         services.TryAddEnumerable(new ServiceDescriptor(typeof(IFeatureProvider), typeof(GrowthBookFeatureProvider), ServiceLifetime.Singleton));
 
         return services;

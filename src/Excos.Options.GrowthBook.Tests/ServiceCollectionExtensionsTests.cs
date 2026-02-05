@@ -94,20 +94,61 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void ConfigureExcosWithGrowthBook_OnHostBuilder_SharedProviderBetweenConfigAndContextual()
     {
+        // When using the integrated HostBuilder extension, there should be only one HTTP call
+        // because the same provider instance is shared between config and contextual options
+        var mockHandler = new MockHandler(Payload);
         var host = Host.CreateDefaultBuilder()
             .ConfigureExcosWithGrowthBook(options =>
             {
                 options.ClientKey = "test-key";
-                options.HttpClientFactory = new MockHttpClientFactory(new MockHandler(Payload));
+                options.RequestFeaturesOnInitialization = true;
+                options.HttpClientFactory = new MockHttpClientFactory(mockHandler);
             })
             .Build();
 
-        // Get the provider from DI
-        var featureProvider = host.Services.GetRequiredService<IFeatureProvider>();
+        // Trigger initialization by resolving services
+        _ = host.Services.GetRequiredService<IFeatureProvider>();
+        _ = host.Services.GetRequiredService<IConfiguration>();
 
-        // The same provider instance should be used for both config and contextual
-        Assert.NotNull(featureProvider);
-        Assert.IsType<GrowthBookFeatureProvider>(featureProvider);
+        // Should only have made one HTTP call since provider is shared
+        Assert.Equal(1, mockHandler.CallCount);
+    }
+
+    [Fact]
+    public void ConfigureExcosWithGrowthBook_SeparateExtensions_SeparateProviders()
+    {
+        // When using separate config and service collection extensions, there should be two HTTP calls
+        // because each creates its own provider instance
+        var mockHandler = new MockHandler(Payload);
+        var mockFactory = new MockHttpClientFactory(mockHandler);
+
+        // First: configuration extension
+        var config = new ConfigurationBuilder()
+            .AddExcosGrowthBookConfiguration(options =>
+            {
+                options.ClientKey = "test-key";
+                options.RequestFeaturesOnInitialization = true;
+                options.HttpClientFactory = mockFactory;
+            })
+            .Build();
+
+        // Second: service collection extension
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.ConfigureExcosWithGrowthBook(options =>
+        {
+            options.ClientKey = "test-key";
+            options.RequestFeaturesOnInitialization = true;
+            options.HttpClientFactory = mockFactory;
+        });
+        var provider = services.BuildServiceProvider();
+
+        // Trigger initialization
+        _ = config["TestSection:Value"];
+        _ = provider.GetRequiredService<IFeatureProvider>();
+
+        // Should have made two HTTP calls since providers are separate
+        Assert.Equal(2, mockHandler.CallCount);
     }
 
     #endregion
@@ -132,9 +173,11 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void ConfigureExcosWithGrowthBook_OnServices_UsesCustomHttpClientFactory()
+    public async Task ConfigureExcosWithGrowthBook_OnServices_UsesCustomHttpClientFactory()
     {
-        var mockFactory = new MockHttpClientFactory(new MockHandler(Payload));
+        // Custom HttpClientFactory should be used by GrowthBook but NOT registered in DI
+        var mockHandler = new MockHandler(Payload);
+        var mockFactory = new MockHttpClientFactory(mockHandler);
         var services = new ServiceCollection();
         services.AddLogging();
         services.ConfigureExcosWithGrowthBook(options =>
@@ -144,14 +187,22 @@ public class ServiceCollectionExtensionsTests
         });
 
         var provider = services.BuildServiceProvider();
-        var httpClientFactory = provider.GetService<IHttpClientFactory>();
 
-        Assert.Same(mockFactory, httpClientFactory);
+        // Should NOT be registered in DI (doesn't pollute global container)
+        var httpClientFactory = provider.GetService<IHttpClientFactory>();
+        Assert.Null(httpClientFactory);
+
+        // But GrowthBook should still work using the custom factory
+        var featureProvider = provider.GetRequiredService<IFeatureProvider>();
+        var features = await featureProvider.GetFeaturesAsync(default);
+        Assert.Single(features);
+        Assert.True(mockHandler.CallCount > 0);
     }
 
     [Fact]
-    public void ConfigureExcosWithGrowthBook_OnServices_UsesCustomHttpMessageHandler()
+    public async Task ConfigureExcosWithGrowthBook_OnServices_UsesCustomHttpMessageHandler()
     {
+        // Custom HttpMessageHandler should be used by GrowthBook but NOT registered in DI
         var mockHandler = new MockHandler(Payload);
         var services = new ServiceCollection();
         services.AddLogging();
@@ -162,10 +213,16 @@ public class ServiceCollectionExtensionsTests
         });
 
         var provider = services.BuildServiceProvider();
-        var httpClientFactory = provider.GetService<IHttpClientFactory>();
 
-        Assert.NotNull(httpClientFactory);
-        Assert.IsType<SimpleHttpClientFactory>(httpClientFactory);
+        // Should NOT be registered in DI (doesn't pollute global container)
+        var httpClientFactory = provider.GetService<IHttpClientFactory>();
+        Assert.Null(httpClientFactory);
+
+        // But GrowthBook should still work using the custom handler
+        var featureProvider = provider.GetRequiredService<IFeatureProvider>();
+        var features = await featureProvider.GetFeaturesAsync(default);
+        Assert.Single(features);
+        Assert.True(mockHandler.CallCount > 0);
     }
 
     [Fact]
@@ -227,9 +284,11 @@ public class ServiceCollectionExtensionsTests
     private class MockHandler : DelegatingHandler
     {
         private readonly string _content;
+        public int CallCount { get; private set; }
         public MockHandler(string content) => _content = content;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            CallCount++;
             var response = new HttpResponseMessage();
             response.Content = new StringContent(_content);
             return Task.FromResult(response);
