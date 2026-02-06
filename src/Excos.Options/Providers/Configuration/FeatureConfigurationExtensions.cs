@@ -1,6 +1,7 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Filtering;
@@ -103,7 +104,7 @@ public static class FeatureConfigurationExtensions
             var priority = section.GetValue<int?>("Priority");
             var filters = LoadFilters(filterParsers, section.GetSection("Filters")).ToList();
             var settingsSection = section.GetSection("Settings");
-            var configurationJson = JsonElementConversion.ToJsonElement(settingsSection);
+            var configurationJson = BuildJsonElement(settingsSection);
 
             var variant = new Variant
             {
@@ -165,5 +166,70 @@ public static class FeatureConfigurationExtensions
         }
 
         return null;
+    }
+
+    private static JsonElement BuildJsonElement(IConfigurationSection section)
+    {
+        var children = section.GetChildren().ToList();
+
+        if (children.Count == 0)
+        {
+            // Leaf node - return value as JSON
+            var value = section.Value;
+            if (value == null)
+            {
+                return default; // Undefined
+            }
+            return JsonSerializer.SerializeToElement(value);
+        }
+
+        // Check if this is an array (children have numeric keys starting from 0)
+        if (IsArraySection(children))
+        {
+            // int.Parse is safe here because IsArraySection validates all keys are numeric
+            var arrayValues = children
+                .OrderBy(c => int.Parse(c.Key))
+                .Select(BuildJsonElement)
+                .ToList();
+            return JsonSerializer.SerializeToElement(arrayValues);
+        }
+
+        // Object node
+        var dict = new Dictionary<string, JsonElement>();
+        foreach (var child in children)
+        {
+            var childElement = BuildJsonElement(child);
+            if (childElement.ValueKind != JsonValueKind.Undefined)
+            {
+                dict[child.Key] = childElement;
+            }
+        }
+
+        if (dict.Count == 0)
+        {
+            return JsonSerializer.SerializeToElement(new { });
+        }
+
+        return JsonSerializer.SerializeToElement(dict);
+    }
+
+    private static bool IsArraySection(List<IConfigurationSection> children)
+    {
+        if (children.Count == 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            if (!int.TryParse(children[i].Key, out var index) || index != i)
+            {
+                // Not a sequential array starting from 0
+                // Check if all keys are numeric (sparse array)
+                return children.All(c => int.TryParse(c.Key, out _));
+            }
+        }
+
+        return true;
     }
 }

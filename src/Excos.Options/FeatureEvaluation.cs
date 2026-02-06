@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.Text.Json;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Abstractions;
 using Excos.Options.Utils;
@@ -42,13 +43,10 @@ public static class FeatureEvaluationExtensions
         where TOptions : class, new()
         where TContext : IOptionsContext
     {
-        var options = new TOptions();
         var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
         
-        var config = JsonElementConversion.MergeVariantConfigurations(variants);
-        config.GetSection(sectionName).Bind(options);
-
-        return options;
+        var mergedConfig = (variants as IReadOnlyList<Variant>)?.MergeToJsonElement() ?? JsonDocument.Parse("{}").RootElement;
+        return mergedConfig.DeserializeMergedConfiguration<TOptions>(sectionName);
     }
 }
 

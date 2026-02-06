@@ -23,7 +23,9 @@ internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextu
 
     public void Configure(TOptions options)
     {
-        var config = JsonElementConversion.MergeVariantConfigurations(_variants);
+        // TODO: Replace with JSON merging + deserialization for perf
+        // once STJ supports Populate method.
+        var config = _variants.ToConfiguration();
         config.GetSection(_configurationSection).Bind(options);
     }
 
