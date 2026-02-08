@@ -36,6 +36,7 @@ internal static class VariantJsonDeserializationExtensions
                 bool found = false;
                 foreach (var property in mergedElement.EnumerateObject())
                 {
+                    // TODO: figure out how to avoid allocation when calling property.Name (currently allocates a new string on each call)
                     if (string.Equals(property.Name, sectionName[part], StringComparison.OrdinalIgnoreCase))
                     {
                         mergedElement = property.Value;
@@ -112,6 +113,10 @@ internal static class VariantJsonDeserializationExtensions
             if (reader.TokenType == JsonTokenType.String)
             {
                 var str = reader.GetString();
+                if (str == null)
+                {
+                    throw new JsonException($"Cannot convert null to {typeof(T)}");
+                }
                 return (T)Converter.ConvertFromInvariantString(str)!;
             }
 

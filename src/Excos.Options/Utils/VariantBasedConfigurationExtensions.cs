@@ -17,12 +17,10 @@ internal static class VariantBasedConfigurationExtensions
     /// <returns>A merged dictionary with colon-delimited keys.</returns>
     public static Dictionary<string, string?> ToConfigurationDictionary(this IEnumerable<Variant> variants)
     {
+        var mergedConfig = variants.MergeToJsonElement();
         var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var pathBuilder = new System.Text.StringBuilder(128);
-        foreach (var variant in variants)
-        {
-            VisitElement(variant.Configuration, pathBuilder, result);
-        }
+        VisitElement(mergedConfig, pathBuilder, result);
         return result;
     }
 

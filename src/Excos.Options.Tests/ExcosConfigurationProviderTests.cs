@@ -5,7 +5,7 @@ using System.Text.Json;
 using Excos.Options.Abstractions;
 using Excos.Options.Abstractions.Data;
 using Excos.Options.Contextual;
-using Excos.Options.Providers.Configuration;
+using Excos.Options.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 using Xunit;

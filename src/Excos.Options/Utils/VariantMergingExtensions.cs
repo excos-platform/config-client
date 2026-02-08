@@ -33,30 +33,54 @@ internal static class VariantMergingExtensions
     /// <summary>
     /// Deep-merges the <see cref="Variant.Configuration"/> elements from all supplied
     /// variants into a single <see cref="JsonElement"/>.
-    /// Later variants override earlier ones for overlapping keys.
+    /// Later variants override earlier ones for overlapping primitive keys.
+    /// Overlapping arrays are concatenated. Overlapping objects are deep-merged.
     /// <para>
+    /// The <paramref name="variants"/> enumerable is iterated exactly once.
     /// Uses <see cref="Utf8JsonWriter"/> with a pooled buffer to minimise allocations.
-    /// The caller can then deserialize with
-    /// <c>JsonSerializer.Deserialize&lt;T&gt;(element, options)</c>.
     /// </para>
     /// </summary>
-    public static JsonElement MergeToJsonElement(this IReadOnlyList<Variant> variants)
+    public static JsonElement MergeToJsonElement(this IEnumerable<Variant> variants)
     {
-        if (variants.Count == 0)
+        // Single iteration: collect only object configurations into a pooled array.
+        var pool = ArrayPool<JsonElement>.Shared;
+        var elements = pool.Rent(8);
+        int count = 0;
+
+        foreach (var variant in variants)
         {
+            var config = variant.Configuration;
+            if (config.ValueKind == JsonValueKind.Object)
+            {
+                if (count == elements.Length)
+                {
+                    var larger = pool.Rent(elements.Length * 2);
+                    elements.AsSpan(0, count).CopyTo(larger);
+                    pool.Return(elements);
+                    elements = larger;
+                }
+                elements[count++] = config;
+            }
+        }
+
+        if (count == 0)
+        {
+            pool.Return(elements);
             return default;
         }
 
-        if (variants.Count == 1)
+        if (count == 1)
         {
-            // No merge needed – return as-is (it's already a cloned element).
-            return variants[0].Configuration;
+            var single = elements[0];
+            pool.Return(elements);
+            return single;
         }
 
         var buffer = RentBufferWriter();
         using var writer = new Utf8JsonWriter(buffer);
 
-        WriteMergedObject(writer, variants);
+        WriteMergedObject(writer, elements.AsSpan(0, count));
+        pool.Return(elements);
         writer.Flush();
 
         var reader = new Utf8JsonReader(buffer.WrittenSpan);
@@ -64,113 +88,129 @@ internal static class VariantMergingExtensions
         return doc.RootElement.Clone();
     }
 
-    /// <summary>
-    /// Writes all variant configurations as a merged JSON object.
-    /// </summary>
-    private static void WriteMergedObject(Utf8JsonWriter writer, IReadOnlyList<Variant> variants)
+    private enum MergeKind : byte
     {
-        // Fast path: single variant
-        int objectCount = 0;
-        JsonElement? singleElement = null;
-        
-        for (int i = 0; i < variants.Count; i++)
-        {
-            var element = variants[i].Configuration;
-            if (element.ValueKind == JsonValueKind.Object)
-            {
-                objectCount++;
-                singleElement = element;
-            }
-        }
-
-        if (objectCount == 0)
-        {
-            writer.WriteStartObject();
-            writer.WriteEndObject();
-            return;
-        }
-
-        if (objectCount == 1)
-        {
-            singleElement!.Value.WriteTo(writer);
-            return;
-        }
-
-        // Multiple objects - need to merge
-        // Use ArrayPool for the elements array
-        var pool = ArrayPool<JsonElement>.Shared;
-        var elements = pool.Rent(objectCount);
-        int idx = 0;
-        for (int i = 0; i < variants.Count; i++)
-        {
-            var element = variants[i].Configuration;
-            if (element.ValueKind == JsonValueKind.Object)
-            {
-                elements[idx++] = element;
-            }
-        }
-
-        WriteMergedObjectFromList(writer, elements.AsSpan(0, idx));
-        pool.Return(elements);
+        /// <summary>Only one variant contributed this key so far.</summary>
+        Single,
+        /// <summary>All contributing variants had an object — deep-merge.</summary>
+        DeepMerge,
+        /// <summary>All contributing variants had an array — concatenate.</summary>
+        ArrayConcat,
+        /// <summary>Types were mixed or primitive — last value wins.</summary>
+        LastWins,
     }
 
     /// <summary>
-    /// Writes a merged object from a span of JsonElements (2+ items).
-    /// Uses ArrayPool for nested recursion to minimize allocations.
+    /// Writes a merged JSON object from a span of <see cref="JsonElement"/> objects (2+ items).
+    /// <para>
+    /// Pass 1 — determines the merge strategy for every property key:
+    ///   • All objects  → deep-merge recursively.
+    ///   • All arrays   → concatenate.
+    ///   • Otherwise    → last value wins.
+    /// Pass 2 — writes the merged output.
+    /// </para>
     /// </summary>
-    private static void WriteMergedObjectFromList(Utf8JsonWriter writer, ReadOnlySpan<JsonElement> elements)
+    private static void WriteMergedObject(Utf8JsonWriter writer, ReadOnlySpan<JsonElement> elements)
     {
-        // Collect all properties with last-wins, tracking which need deep merge
-        var merged = new Dictionary<string, (JsonElement Value, bool NeedsMerge)>(StringComparer.OrdinalIgnoreCase);
+        var properties = new Dictionary<string, (JsonElement LastValue, MergeKind Kind)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var element in elements)
         {
-            foreach (var property in element.EnumerateObject())
+            foreach (var prop in element.EnumerateObject())
             {
-                bool needsMerge = false;
-                if (merged.TryGetValue(property.Name, out var existing))
+                if (!properties.TryGetValue(prop.Name, out var existing))
                 {
-                    needsMerge = existing.Value.ValueKind == JsonValueKind.Object && 
-                                 property.Value.ValueKind == JsonValueKind.Object;
+                    properties[prop.Name] = (prop.Value, MergeKind.Single);
                 }
-                merged[property.Name] = (property.Value, needsMerge);
+                else
+                {
+                    var kind = (existing.Kind, existing.LastValue.ValueKind, prop.Value.ValueKind) switch
+                    {
+                        (MergeKind.Single, JsonValueKind.Object, JsonValueKind.Object) => MergeKind.DeepMerge,
+                        (MergeKind.Single, JsonValueKind.Array, JsonValueKind.Array) => MergeKind.ArrayConcat,
+                        (MergeKind.DeepMerge, _, JsonValueKind.Object) => MergeKind.DeepMerge,
+                        (MergeKind.ArrayConcat, _, JsonValueKind.Array) => MergeKind.ArrayConcat,
+                        _ => MergeKind.LastWins,
+                    };
+                    properties[prop.Name] = (prop.Value, kind);
+                }
             }
         }
 
         writer.WriteStartObject();
 
-        foreach (var (key, (value, needsMerge)) in merged)
+        foreach (var (key, (value, kind)) in properties)
         {
             writer.WritePropertyName(key);
-            
-            if (needsMerge)
+
+            switch (kind)
             {
-                // Use ArrayPool for the contributions array
-                var pool = ArrayPool<JsonElement>.Shared;
-                var contributions = pool.Rent(elements.Length);
-                int count = 0;
-                
-                foreach (var element in elements)
-                {
-                    foreach (var property in element.EnumerateObject())
-                    {
-                        if (string.Equals(property.Name, key, StringComparison.OrdinalIgnoreCase) &&
-                            property.Value.ValueKind == JsonValueKind.Object)
-                        {
-                            contributions[count++] = property.Value;
-                        }
-                    }
-                }
-                
-                WriteMergedObjectFromList(writer, contributions.AsSpan(0, count));
-                pool.Return(contributions);
-            }
-            else
-            {
-                value.WriteTo(writer);
+                case MergeKind.Single:
+                case MergeKind.LastWins:
+                    value.WriteTo(writer);
+                    break;
+
+                case MergeKind.DeepMerge:
+                    WriteMergedProperty(writer, key, elements);
+                    break;
+
+                case MergeKind.ArrayConcat:
+                    WriteConcatenatedArray(writer, key, elements);
+                    break;
             }
         }
 
         writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// Collects all object contributions for <paramref name="key"/> and deep-merges them.
+    /// </summary>
+    private static void WriteMergedProperty(Utf8JsonWriter writer, string key, ReadOnlySpan<JsonElement> elements)
+    {
+        var pool = ArrayPool<JsonElement>.Shared;
+        var contributions = pool.Rent(elements.Length);
+        int count = 0;
+
+        foreach (var element in elements)
+        {
+            foreach (var prop in element.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, key, StringComparison.OrdinalIgnoreCase) &&
+                    prop.Value.ValueKind == JsonValueKind.Object)
+                {
+                    contributions[count++] = prop.Value;
+                }
+            }
+        }
+
+        WriteMergedObject(writer, contributions.AsSpan(0, count));
+        pool.Return(contributions);
+    }
+
+    /// <summary>
+    /// Writes a single JSON array whose elements are the concatenation of all arrays
+    /// found under <paramref name="key"/> across the source elements.
+    /// </summary>
+    private static void WriteConcatenatedArray(Utf8JsonWriter writer, string key, ReadOnlySpan<JsonElement> elements)
+    {
+        writer.WriteStartArray();
+
+        foreach (var element in elements)
+        {
+            foreach (var prop in element.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, key, StringComparison.OrdinalIgnoreCase) &&
+                    prop.Value.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in prop.Value.EnumerateArray())
+                    {
+                        item.WriteTo(writer);
+                    }
+                }
+            }
+        }
+
+        writer.WriteEndArray();
     }
 }

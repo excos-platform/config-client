@@ -3,7 +3,7 @@
 
 using Excos.Options.Abstractions;
 using Excos.Options.Contextual;
-using Excos.Options.Providers.Configuration;
+using Excos.Options.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
