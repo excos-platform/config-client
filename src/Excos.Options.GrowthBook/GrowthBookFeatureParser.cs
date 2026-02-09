@@ -113,7 +113,9 @@ namespace Excos.Options.GrowthBook
                 return value.Clone();
             }
 
-            return JsonElementConversion.WrapInObject(featureName, value);
+            var escapedKey = JsonSerializer.Serialize(featureName);
+            using var doc = JsonDocument.Parse($"{{{escapedKey}: {value.GetRawText()}}}");
+            return doc.RootElement.Clone();
         }
     }
 }

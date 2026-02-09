@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using Excos.Options.Utils;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
@@ -12,15 +13,18 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
     private readonly string? _name;
     private readonly string _configurationSection;
     private readonly IFeatureEvaluation _featureEvaluation;
+    private readonly ContextualOptionsVariantConfigurationCache _cache;
 
     public LoadContextualOptions(
         string? name,
         string configurationSection,
-        IFeatureEvaluation featureEvaluation)
+        IFeatureEvaluation featureEvaluation,
+        ContextualOptionsVariantConfigurationCache cache)
     {
         _name = name;
         _configurationSection = configurationSection;
         _featureEvaluation = featureEvaluation;
+        _cache = cache;
     }
 
     public ValueTask<IConfigureContextualOptions<TOptions>> LoadAsync<TContext>(string name, in TContext context, CancellationToken cancellationToken)
@@ -41,6 +45,8 @@ internal class LoadContextualOptions<TOptions> : ILoadContextualOptions<TOptions
         where TContext : IOptionsContext
     {
         var variants = await _featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
-        return new ConfigureContextualOptions<TOptions>(_configurationSection, variants);
+        var configuration = _cache.GetOrAdd(variants);
+        var configurationSection = string.IsNullOrEmpty(_configurationSection) ? configuration : configuration.GetSection(_configurationSection);
+        return new ConfigureContextualOptions<TOptions>(configurationSection);
     }
 }

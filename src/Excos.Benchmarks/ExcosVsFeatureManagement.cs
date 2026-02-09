@@ -78,7 +78,7 @@ public class ExcosVsFeatureManagement
     public object BuildAndResolveFM()
     {
         var provider = BuildFMProvider();
-        return _fmProvider.GetRequiredService<IFeatureManager>();
+        return provider.GetRequiredService<IFeatureManager>();
     }
 
     [Benchmark]
@@ -93,7 +93,7 @@ public class ExcosVsFeatureManagement
     public async Task<string> GetExcosSettingsFeatureEvaluation()
     {
         var eval = _excosProvider.GetRequiredService<IFeatureEvaluation>();
-        var options = await eval.EvaluateFeaturesAsync<TestOptions, TestContext>(string.Empty, new TestContext(), default);
+        var options = await eval.EvaluateFeaturesAsync<TestOptions, TestContext>("Test", new TestContext(), default);
         return options.Setting;
     }
 

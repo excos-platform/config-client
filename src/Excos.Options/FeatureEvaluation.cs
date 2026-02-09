@@ -42,13 +42,10 @@ public static class FeatureEvaluationExtensions
         where TOptions : class, new()
         where TContext : IOptionsContext
     {
-        var options = new TOptions();
         var variants = await featureEvaluation.EvaluateFeaturesAsync(context, cancellationToken).ConfigureAwait(false);
         
-        var config = JsonElementConversion.MergeVariantConfigurations(variants);
-        config.GetSection(sectionName).Bind(options);
-
-        return options;
+        var mergedConfig = variants.MergeToJsonElement();
+        return mergedConfig.DeserializeMergedConfiguration<TOptions>(sectionName);
     }
 }
 

@@ -5,7 +5,7 @@ using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 
-namespace Excos.Options.Providers.Configuration;
+namespace Excos.Options.Configuration;
 
 /// <summary>
 /// A configuration provider that loads feature variants and converts them to configuration key-value pairs.
@@ -54,7 +54,7 @@ internal class ExcosConfigurationProvider : ConfigurationProvider, IDisposable
     private async Task LoadAsync()
     {
         var variants = await _featureEvaluation.EvaluateFeaturesAsync(_context, _cts.Token).ConfigureAwait(false);
-        Data = JsonElementConversion.ToConfigurationDictionary(variants);
+        Data = variants.ToConfigurationDictionary();
         OnReload();
     }
 

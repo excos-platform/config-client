@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
@@ -25,11 +25,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../Excos.SourceGen/Excos.SourceGen.csproj" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" ReferenceOutputAssembly="false" />
-    <PackageReference Include="System.IO.Hashing" Version="[8.0.0,)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0,)" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[8.0.0,)" />
-    <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[8.6.0-rtm.24311.4,9.0.0)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="System.IO.Hashing" Version="[10.0.2,)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="[10.0.2,)" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="[10.0.2,)" />
+    <PackageReference Include="Microsoft.Extensions.Options.Contextual" Version="[10.0.0-preview.1.25559.3,11.0.0)" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +39,7 @@
   <ItemGroup>
       <InternalsVisibleTo Include="$(AssemblyName).Tests, PublicKey=$(StrongNamePublicKey)" />
       <InternalsVisibleTo Include="$(AssemblyName).GrowthBook, PublicKey=$(StrongNamePublicKey)" />
+      <InternalsVisibleTo Include="Excos.Benchmarks, PublicKey=$(StrongNamePublicKey)" />
   </ItemGroup>
 
 </Project>

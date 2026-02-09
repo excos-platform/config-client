@@ -6,7 +6,7 @@ using Excos.Options.Contextual;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 
-namespace Excos.Options.Providers.Configuration;
+namespace Excos.Options.Configuration;
 
 /// <summary>
 /// Extension methods for adding Excos configuration to <see cref="IConfigurationBuilder"/>.

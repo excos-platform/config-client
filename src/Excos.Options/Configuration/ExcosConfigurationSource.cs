@@ -5,7 +5,7 @@ using Excos.Options.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual;
 
-namespace Excos.Options.Providers.Configuration;
+namespace Excos.Options.Configuration;
 
 /// <summary>
 /// Configuration source for building an <see cref="ExcosConfigurationProvider"/>.
