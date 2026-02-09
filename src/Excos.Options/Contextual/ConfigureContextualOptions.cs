@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
-using System.Text.Json;
-using Excos.Options.Abstractions.Data;
-using Excos.Options.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
@@ -12,21 +9,18 @@ namespace Excos.Options.Contextual;
 internal partial class ConfigureContextualOptions<TOptions> : IConfigureContextualOptions<TOptions>
     where TOptions : class
 {
-    private readonly string _configurationSection;
-    private readonly IEnumerable<Variant> _variants;
+    private readonly IConfiguration _configuration;
 
-    public ConfigureContextualOptions(string configurationSection, IEnumerable<Variant> variants)
+    public ConfigureContextualOptions(IConfiguration configuration)
     {
-        _configurationSection = configurationSection;
-        _variants = variants;
+        // TODO: Replace with JSON deserialization for perf
+        // once STJ supports Populate method.
+        _configuration = configuration;
     }
 
     public void Configure(TOptions options)
     {
-        // TODO: Replace with JSON merging + deserialization for perf
-        // once STJ supports Populate method.
-        var config = _variants.ToConfiguration();
-        config.GetSection(_configurationSection).Bind(options);
+        _configuration.Bind(options);
     }
 
     public void Dispose()

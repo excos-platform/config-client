@@ -1,6 +1,8 @@
 // Copyright (c) Marian Dziubiak and Contributors.
 // Licensed under the Apache License, Version 2.0
 
+using System.IO.Hashing;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Excos.Options.Abstractions.Data;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +11,20 @@ namespace Excos.Options.Utils;
 
 internal static class VariantBasedConfigurationExtensions
 {
+    /// <summary>
+    /// Computes a stable hash for a collection of variants based on their IDs.
+    /// </summary>
+    /// <param name="variants">The variants to hash.</param>
+    /// <returns>A 64-bit hash value.</returns>
+    public static ulong ComputeVariantHash(this IEnumerable<Variant> variants)
+    {
+        var hasher = new XxHash64();
+        foreach (var variant in variants)
+        {
+            hasher.Append(MemoryMarshal.AsBytes(variant.Id.AsSpan()));
+        }
+        return hasher.GetCurrentHashAsUInt64();
+    }
     /// <summary>
     /// Converts multiple variant configurations to a merged configuration dictionary.
     /// Later variants override earlier ones for the same keys.

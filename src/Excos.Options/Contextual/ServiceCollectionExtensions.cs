@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Options.Contextual;
 using Microsoft.Extensions.Options.Contextual.Provider;
 
@@ -33,12 +34,20 @@ public static class ServiceCollectionExtensions
 
         services.AddExcosFeatureEvaluation();
 
+        // Register cache if not already registered
+        if (!services.Any(s => s.ServiceType == typeof(ContextualOptionsVariantConfigurationCache)))
+        {
+            services.AddSingleton<ContextualOptionsVariantConfigurationCache>();
+            services.AddOptions<ExcosVariantConfigurationCacheOptions>();
+        }
+
         return services
             .AddContextualOptions()
             .AddSingleton<ILoadContextualOptions<TOptions>>(sp =>
                 new LoadContextualOptions<TOptions>(
                     name,
                     section,
-                    sp.GetRequiredService<IFeatureEvaluation>()));
+                    sp.GetRequiredService<IFeatureEvaluation>(),
+                    sp.GetRequiredService<ContextualOptionsVariantConfigurationCache>()));
     }
 }
